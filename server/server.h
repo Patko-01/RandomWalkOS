@@ -1,0 +1,4 @@
+#ifndef SEMESTRALKA_SERVER_H
+#define SEMESTRALKA_SERVER_H
+
+#endif

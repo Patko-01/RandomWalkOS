@@ -1,0 +1,4 @@
+#ifndef SEMESTRALKA_CLIENT_H
+#define SEMESTRALKA_CLIENT_H
+
+#endif

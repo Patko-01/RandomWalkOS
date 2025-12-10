@@ -1,0 +1,4 @@
+#ifndef SEMESTRALKA_WORLD_H
+#define SEMESTRALKA_WORLD_H
+
+#endif
