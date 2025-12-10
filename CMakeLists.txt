@@ -19,8 +19,5 @@ add_executable(client
         common/ipc.c
         common/ipc.h)
 
-# Link Winsock2 on Windows/MinGW
-if (WIN32)
-    target_link_libraries(server ws2_32)
-    target_link_libraries(client ws2_32)
-endif()
+target_link_libraries(server ws2_32)
+target_link_libraries(client ws2_32)
