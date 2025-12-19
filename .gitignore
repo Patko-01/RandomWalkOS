@@ -1,0 +1,11 @@
+# CLion
+.idea/
+
+# CMake build dirs
+build*/
+cmake-build-*/
+
+# Build output
+*.o
+*.out
+*.exe
