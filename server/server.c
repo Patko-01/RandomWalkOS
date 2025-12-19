@@ -1,8 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "../common/ipc.h"
+#include "../common/randomWalk.h"
 
 int main() {
+    srand(time(NULL));
+
     ipc_server srv;
     if (ipc_server_start(&srv, IPC_PORT) != 0) {
         fprintf(stderr, "Server start failed\n");
@@ -27,12 +32,22 @@ int main() {
     buf[r] = '\0';
     printf("Server received: %s\n", buf);
 
-    const char* reply = "World";
+    //simulation
+    Position start = {1, 1};
+    Probabilities p = {0.25, 0.25, 0.25, 0.25};
+    WalkResult res = randomWalkReplications(start, p, 100, 5);
+    printf("steps %f\n", res.avgStepCount);
+    printf("probability %f\n", res.probSuccess);
+
+    char reply[128];
+    snprintf(reply, sizeof(reply), "avg=%.2f prob=%.2f", res.avgStepCount, res.probSuccess);
+
     if (ipc_server_send(&srv, reply, strlen(reply)) <= 0) {
         fprintf(stderr, "Send failed\n");
         ipc_server_stop(&srv);
         return 1;
     }
+
     printf("Server replied: %s\n", reply);
 
     ipc_server_stop(&srv);

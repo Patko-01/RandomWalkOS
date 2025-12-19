@@ -9,7 +9,10 @@ add_executable(server
         common/world.c
         common/world.h
         common/ipc.c
-        common/ipc.h)
+        common/ipc.h
+        common/randomWalk.c
+        common/randomWalk.h
+)
 
 add_executable(client
         client/client.c
@@ -18,4 +21,6 @@ add_executable(client
         common/world.h
         common/ipc.c
         common/ipc.h
+        common/randomWalk.c
+        common/randomWalk.h
 )
