@@ -4,9 +4,23 @@
 #include <time.h>
 #include "../common/ipc.h"
 #include "../common/randomWalk.h"
+#include "../common/protocol.h"
 
-int main() {
+int main(void) {
     srand(time(NULL));
+    /* test
+    Position pos;
+    pos.x = 1;
+    pos.y = 23;
+    Probabilities pr;
+    pr.p_up = 0.24;
+    pr.p_down = 0.26;
+    pr.p_right = 0.25;
+    pr.p_left = 0.25;
+    WalkResult res = randomWalkReplications(pos, pr, 123, 2);
+
+    printf("avg steps %lf, suc prob %lf\n", res.avgStepCount, res.probSuccess);
+    */
 
     ipc_server srv;
     if (ipc_server_start(&srv, IPC_PORT) != 0) {
@@ -22,33 +36,40 @@ int main() {
     }
     printf("Client connected.\n");
 
-    char buf[64] = {0};
-    int r = ipc_server_recv(&srv, buf, sizeof(buf)-1);
+    SimRequest req;
+    int r = ipc_server_recv(&srv, (char*)&req, sizeof(SimRequest));
     if (r <= 0) {
         fprintf(stderr, "Recv failed\n");
         ipc_server_stop(&srv);
         return 1;
+    } else if (r != sizeof(SimRequest)) {
+        fprintf(stderr, "Received wrong size\n");
+        ipc_server_stop(&srv);
+        return 1;
     }
-    buf[r] = '\0';
-    printf("Server received: %s\n", buf);
+
+    printf("\nRequest received\n");
+
+    printf("\nStart = [%d, %d]\n", req.startX, req.startY);
+    printf("K = %d, reps = %d\n", req.maxSteps, req.replications);
 
     //simulation
-    Position start = {1, 1};
-    Probabilities p = {0.25, 0.25, 0.25, 0.25};
-    WalkResult res = randomWalkReplications(start, p, 100, 5);
-    printf("steps %f\n", res.avgStepCount);
-    printf("probability %f\n", res.probSuccess);
+    Position start = { req.startX, req.startY };
+    Probabilities pr = {
+        req.p_up,
+        req.p_down,
+        req.p_left,
+        req.p_right
+    };
+    WalkResult res = randomWalkReplications(start, pr, req.maxSteps, req.replications);
 
-    char reply[128];
-    snprintf(reply, sizeof(reply), "avg=%.2f prob=%.2f", res.avgStepCount, res.probSuccess);
-
-    if (ipc_server_send(&srv, reply, strlen(reply)) <= 0) {
+    if (ipc_server_send(&srv, (char*)&res, sizeof(WalkResult)) <= 0) {
         fprintf(stderr, "Send failed\n");
         ipc_server_stop(&srv);
         return 1;
     }
 
-    printf("Server replied: %s\n", reply);
+    printf("\nServer replied with simulation result\n");
 
     ipc_server_stop(&srv);
     return 0;

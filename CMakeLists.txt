@@ -12,6 +12,7 @@ add_executable(server
         common/ipc.h
         common/randomWalk.c
         common/randomWalk.h
+        common/protocol.h
 )
 
 add_executable(client
@@ -23,4 +24,5 @@ add_executable(client
         common/ipc.h
         common/randomWalk.c
         common/randomWalk.h
+        common/protocol.h
 )
