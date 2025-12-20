@@ -81,14 +81,14 @@ int main(void) {
     }
     printf("\nClient sent simulation request.\n");
 
-    WalkResult res;
+    WalkResults res;
 
     int r = ipc_client_recv(&cli, (char*)&res, sizeof(res));
     if (r <= 0) {
         fprintf(stderr, "Recv failed\n");
         ipc_client_close(&cli);
         return 1;
-    } else if (r != sizeof(WalkResult)) {
+    } else if (r != sizeof(WalkResults)) {
         fprintf(stderr, "Received wrong response from client.\n");
         ipc_client_close(&cli);
         return 1;

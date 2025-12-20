@@ -61,9 +61,9 @@ int main(void) {
         req.p_left,
         req.p_right
     };
-    WalkResult res = randomWalkReplications(start, pr, req.maxSteps, req.replications);
+    WalkResults res = randomWalkReplications(start, pr, req.maxSteps, req.replications);
 
-    if (ipc_server_send(&srv, (char*)&res, sizeof(WalkResult)) <= 0) {
+    if (ipc_server_send(&srv, (char*)&res, sizeof(WalkResults)) <= 0) {
         fprintf(stderr, "Send failed\n");
         ipc_server_stop(&srv);
         return 1;

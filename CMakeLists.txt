@@ -22,7 +22,6 @@ add_executable(client
         common/world.h
         common/ipc.c
         common/ipc.h
-        common/randomWalk.c
         common/randomWalk.h
         common/protocol.h
 )

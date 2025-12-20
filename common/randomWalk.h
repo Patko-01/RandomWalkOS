@@ -1,5 +1,6 @@
 #ifndef PROJECTS_RANDOM_WALK_H
 #define PROJECTS_RANDOM_WALK_H
+#include <pthread.h>
 
 typedef struct {
     int x;
@@ -16,9 +17,8 @@ typedef struct {
 typedef struct {
     double probSuccess;
     double avgStepCount;
-} WalkResult;
+} WalkResults;
 
-int randomWalk(Position start, Probabilities pr, int K);
-WalkResult randomWalkReplications(Position start, Probabilities pr, int K, int count);
+WalkResults randomWalkReplications(Position start, Probabilities pr, int K, int count);
 
 #endif
