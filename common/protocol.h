@@ -2,6 +2,8 @@
 #define PROTOCOL_H
 
 typedef struct {
+    int end;
+
     int startX;
     int startY;
 

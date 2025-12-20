@@ -24,52 +24,60 @@ int main(void) {
 
     ipc_server srv;
     if (ipc_server_start(&srv, IPC_PORT) != 0) {
-        fprintf(stderr, "Server start failed\n");
+        fprintf(stderr, "Server start failed.\n");
         return 1;
     }
     printf("Server listening on port %s...\n", IPC_PORT);
 
     if (ipc_server_accept(&srv) != 0) {
-        fprintf(stderr, "Accept failed\n");
+        fprintf(stderr, "Accept failed.\n");
         ipc_server_stop(&srv);
         return 1;
     }
     printf("Client connected.\n");
 
-    SimRequest req;
-    int r = ipc_server_recv(&srv, (char*)&req, sizeof(SimRequest));
-    if (r <= 0) {
-        fprintf(stderr, "Recv failed\n");
-        ipc_server_stop(&srv);
-        return 1;
-    } else if (r != sizeof(SimRequest)) {
-        fprintf(stderr, "Received wrong size\n");
-        ipc_server_stop(&srv);
-        return 1;
+    while (1) {
+        printf("Waiting for client request.\n");
+        SimRequest req;
+        int r = ipc_server_recv(&srv, (char*)&req, sizeof(SimRequest));
+        if (r <= 0) {
+            fprintf(stderr, "Recv failed.\n");
+            ipc_server_stop(&srv);
+            return 1;
+        } else if (r != sizeof(SimRequest)) {
+            fprintf(stderr, "Received wrong size.\n");
+            ipc_server_stop(&srv);
+            return 1;
+        }
+
+        printf("\nRequest received.\n");
+
+        if (req.end == 1) {
+            printf("End request received.\n");
+            break;
+        }
+
+        printf("Start = [%d, %d]\n", req.startX, req.startY);
+        printf("K = %d, reps = %d\n", req.maxSteps, req.replications);
+
+        //simulation
+        Position start = { req.startX, req.startY };
+        Probabilities pr = {
+            req.p_up,
+            req.p_down,
+            req.p_left,
+            req.p_right
+        };
+        WalkResults res = randomWalkReplications(start, pr, req.maxSteps, req.replications);
+
+        if (ipc_server_send(&srv, (char*)&res, sizeof(WalkResults)) <= 0) {
+            fprintf(stderr, "Send failed.\n");
+            ipc_server_stop(&srv);
+            return 1;
+        }
+
+        printf("\nServer replied with simulation result.\n");
     }
-
-    printf("\nRequest received\n");
-
-    printf("\nStart = [%d, %d]\n", req.startX, req.startY);
-    printf("K = %d, reps = %d\n", req.maxSteps, req.replications);
-
-    //simulation
-    Position start = { req.startX, req.startY };
-    Probabilities pr = {
-        req.p_up,
-        req.p_down,
-        req.p_left,
-        req.p_right
-    };
-    WalkResults res = randomWalkReplications(start, pr, req.maxSteps, req.replications);
-
-    if (ipc_server_send(&srv, (char*)&res, sizeof(WalkResults)) <= 0) {
-        fprintf(stderr, "Send failed\n");
-        ipc_server_stop(&srv);
-        return 1;
-    }
-
-    printf("\nServer replied with simulation result\n");
 
     ipc_server_stop(&srv);
     return 0;

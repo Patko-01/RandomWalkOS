@@ -9,3 +9,5 @@ cmake-build-*/
 *.o
 *.out
 *.exe
+
+ignore.txt
