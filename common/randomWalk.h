@@ -1,6 +1,7 @@
 #ifndef PROJECTS_RANDOM_WALK_H
 #define PROJECTS_RANDOM_WALK_H
 #include <pthread.h>
+#include "world.h"
 
 typedef struct {
     int x;
@@ -19,6 +20,6 @@ typedef struct {
     double avgStepCount;
 } WalkResults;
 
-WalkResults randomWalkReplications(Position start, Probabilities pr, int K, int count);
+WalkResults randomWalkReplications(Position start, Probabilities pr, int K, int count, World world);
 
 #endif

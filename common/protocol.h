@@ -7,6 +7,9 @@ typedef struct {
     int startX;
     int startY;
 
+    int sizeX;
+    int sizeY;
+
     double p_up;
     double p_down;
     double p_left;

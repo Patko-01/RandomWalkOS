@@ -9,12 +9,13 @@ typedef struct {
 
     Position start;
     Probabilities pr;
+    World world;
 
     pthread_mutex_t mutex;
 } Shared;
 
-int nextStep(Probabilities pr, unsigned int *seed) {
-    double r = (double)rand_r(seed) / RAND_MAX;
+int nextStep(const Probabilities pr, unsigned int *seed) {
+    const double r = (double)rand_r(seed) / RAND_MAX;
 
     if (r < pr.p_up) {
         return 0; //up
@@ -27,25 +28,31 @@ int nextStep(Probabilities pr, unsigned int *seed) {
     }
 }
 
-int randomWalk(Position start, Probabilities pr, int K) {
+int randomWalk(const Position start, const Probabilities pr, const int K, const World world) {
     unsigned int seed = (unsigned int)pthread_self();
-    Position pos = start; //copy
+    int currX = start.x;
+    int currY = start.y;
     int steps = 0;
 
     for (int i = 0; i < K; ++i) {
-        if (pos.x == 0 && pos.y == 0) {
+        if (currX == 0 && currY == 0) {
             return steps;
         }
 
-        const int direction = nextStep(pr, &seed);
+        do {
+            const int direction = nextStep(pr, &seed);
 
-        switch (direction) {
-            case 0: ++pos.y; break;
-            case 1: --pos.y; break;
-            case 2: --pos.x; break;
-            case 3: ++pos.x; break;
-            default: ;
-        }
+            switch (direction) {
+                case 0: ++currY; break;
+                case 1: --currY; break;
+                case 2: --currX; break;
+                case 3: ++currX; break;
+                default: ;
+            }
+        } while (WORLD_AT(&world, currX, currY) == '#');
+
+        //TODO: check ci nepresiel za okraj
+        //TODO: zapis do fbuffe
 
         ++steps;
     }
@@ -55,7 +62,7 @@ int randomWalk(Position start, Probabilities pr, int K) {
 void *randomWalkRoutine(void* arg) {
     Shared *sh = (Shared*) arg;
 
-    const int steps = randomWalk(sh->start, sh->pr, sh->K);
+    const int steps = randomWalk(sh->start, sh->pr, sh->K, sh->world);
 
     if (steps != -1) {
         pthread_mutex_lock(&sh->mutex);
@@ -67,7 +74,7 @@ void *randomWalkRoutine(void* arg) {
     return NULL;
 }
 
-WalkResults randomWalkReplications(const Position start, const Probabilities pr, const int K, int count) {
+WalkResults randomWalkReplications(const Position start, const Probabilities pr, const int K, const int count, const World world) {
     pthread_t th[count];
 
     Shared sh;
@@ -76,6 +83,7 @@ WalkResults randomWalkReplications(const Position start, const Probabilities pr,
     sh.K = K;
     sh.stepCount = 0;
     sh.success = 0;
+    sh.world = world;
 
     pthread_mutex_init(&sh.mutex, NULL);
 

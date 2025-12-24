@@ -8,9 +8,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define IPC_LAST_ERROR() errno
-#define IPC_CLOSE(s) close(s)
-
 int ipc_server_start(ipc_server* srv, const char* port) {
     if (!srv || !port) {
         return -1;
@@ -20,14 +17,14 @@ int ipc_server_start(ipc_server* srv, const char* port) {
 
     int listenSock = socket(AF_INET, SOCK_STREAM, 0);
     if (listenSock < 0) {
-        fprintf(stderr, "socket failed: %d\n", IPC_LAST_ERROR());
+        printf("Socket failed.\n");
         return -1;
     }
 
     int opt = 1;
     if (setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        fprintf(stderr, "setsockopt(SO_REUSEADDR) failed: %d\n", IPC_LAST_ERROR());
-        IPC_CLOSE(listenSock);
+        printf("Setsockopt(SO_REUSEADDR) failed.\n");
+        close(listenSock);
         return -1;
     }
 
@@ -38,14 +35,14 @@ int ipc_server_start(ipc_server* srv, const char* port) {
     sa.sin_port = htons((unsigned short)atoi(port));
 
     if (bind(listenSock, (struct sockaddr*)&sa, sizeof(sa)) < 0) {
-        fprintf(stderr, "bind (localhost) failed: %d\n", IPC_LAST_ERROR());
-        IPC_CLOSE(listenSock);
+        printf("Bind (localhost) failed.\n");
+        close(listenSock);
         return -1;
     }
 
     if (listen(listenSock, NUMBER_OF_CLIENTS) < 0) {
-        fprintf(stderr, "listen failed: %d\n", IPC_LAST_ERROR());
-        IPC_CLOSE(listenSock);
+        printf("Listen failed.\n");
+        close(listenSock);
         return -1;
     }
 
@@ -59,7 +56,7 @@ int ipc_server_accept(ipc_server* srv) {
     }
     int clientSock = accept(srv->listen_sock, NULL, NULL);
     if (clientSock < 0) {
-        fprintf(stderr, "accept failed: %d\n", IPC_LAST_ERROR());
+        printf("Accept failed.\n");
         return -1;
     }
     srv->conn_sock = clientSock;
@@ -93,11 +90,11 @@ void ipc_server_stop(ipc_server* srv) {
         return;
     }
     if (srv->conn_sock >= 0) {
-        IPC_CLOSE(srv->conn_sock);
+        close(srv->conn_sock);
         srv->conn_sock = -1;
     }
     if (srv->listen_sock >= 0) {
-        IPC_CLOSE(srv->listen_sock);
+        close(srv->listen_sock);
         srv->listen_sock = -1;
     }
 }
@@ -118,20 +115,20 @@ int ipc_client_connect(ipc_client* cli, const char* port) {
 
     int rv = getaddrinfo("127.0.0.1", port, &hints, &result);
     if (rv != 0) {
-        fprintf(stderr, "getaddrinfo failed: %s\n", gai_strerror(rv));
+        printf("Getaddrinfo failed.\n");
         return -1;
     }
 
     int s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     if (s < 0) {
-        fprintf(stderr, "socket failed: %d\n", IPC_LAST_ERROR());
+        printf("Socket failed.\n");
         freeaddrinfo(result);
         return -1;
     }
 
     if (connect(s, result->ai_addr, result->ai_addrlen) < 0) {
-        fprintf(stderr, "connect failed: %d\n", IPC_LAST_ERROR());
-        IPC_CLOSE(s);
+        printf("Connect failed.\n");
+        close(s);
         freeaddrinfo(result);
         return -1;
     }
@@ -169,7 +166,7 @@ void ipc_client_close(ipc_client* cli) {
         return;
     }
     if (cli->sock >= 0) {
-        IPC_CLOSE(cli->sock);
+        close(cli->sock);
         cli->sock = -1;
     }
 }
