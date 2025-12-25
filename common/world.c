@@ -16,7 +16,7 @@ World createWorld(const int sizeX, const int sizeY, const int startX, const int 
     w.worldBuffer = malloc(sizeX * sizeY * sizeof(char));
     memset(w.worldBuffer, '.', sizeX * sizeY);
 
-    WORLD_AT(&w, w.startX, w.startY) = 'O';
+    WORLD_AT(&w, 0, 0) = 'W';
 
     if (w.worldBuffer == NULL) {
         printf("Failed to allocate world.\n");
@@ -27,16 +27,16 @@ World createWorld(const int sizeX, const int sizeY, const int startX, const int 
     return w;
 }
 
-void placeObstacles(const World world) {
-    int randX = (rand() % world.sizeX);
-    int randY = (rand() % (world.sizeY - 1));
+void placeObstacles(const World *world) {
+    int randX = (rand() % world->sizeX);
+    int randY = (rand() % (world->sizeY - 1));
 
-    while ((randX == 0 && randY == 0) || (randX == world.startX && randY == world.startY)) {
-        randX = (rand() % world.sizeX);
-        randY = (rand() % world.sizeY);
+    while ((randX == 0 && randY == 0) || (randX == world->startX && randY == world->startY)) {
+        randX = (rand() % world->sizeX);
+        randY = (rand() % world->sizeY);
     }
 
-    WORLD_AT(&world, randX, randY) = '#';
+    WORLD_AT(world, randX, randY) = '#';
 }
 
 void destroyWorld(World *w) {

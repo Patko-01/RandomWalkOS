@@ -51,19 +51,19 @@ int randomWalk(const Position start, const Probabilities pr, const int K, const 
                 case 3: ++currX; break;
                 default: ;
             }
+
+            if (currX < 0) {
+                currX = world.sizeX - 1;
+            } else if (currX >= world.sizeX) {
+                currX = 0;
+            }
+
+            if (currY < 0) {
+                currY = world.sizeY - 1;
+            } else if (currY >= world.sizeY) {
+                currY = 0;
+            }
         } while (WORLD_AT(&world, currX, currY) == '#');
-
-        if (currX < 0) {
-            currX = world.sizeX - 1;
-        } else if (currX >= world.sizeX) {
-            currX = 0;
-        }
-
-        if (currY < 0) {
-            currY = world.sizeY - 1;
-        } else if (currY >= world.sizeY) {
-            currY = 0;
-        }
 
         ++steps;
     }
@@ -132,9 +132,17 @@ WalkPathResult randomWalkWithPath(const Position start, const Probabilities pr, 
     int currY = start.y;
 
     result.pathLen = 0;
+    result.worldX = world.sizeX;
+    result.worldY = world.sizeY;
 
-    memset(result.path, 0, sizeof(char));
-    memcpy(result.world, world.worldBuffer, world.sizeX * world.sizeY);
+    memset(result.path, 0, sizeof(result.path));
+    result.path[result.pathLen++] = (Position){ currX, currY };
+
+    for (int x = 0; x < world.sizeX; ++x) {
+        for (int y = 0; y < world.sizeY; ++y) {
+            result.world[x][y] = WORLD_AT(&world, x, y);
+        }
+    }
 
     for (int i = 0; i < K; ++i) {
         if (currX == 0 && currY == 0) {

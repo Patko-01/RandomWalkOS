@@ -1,33 +1,59 @@
 #include <stdio.h>
 #include <math.h>
-#include <stdlib.h>
 
 #include "../common/ipc.h"
 #include "../common/protocol.h"
 #include "../common/randomWalk.h"
 
 // tento kód mám od AI
-void clear_input(void) {
+void clearInput(void) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {}
 }
 
-int read_int(const char* prompt, int* out) {
+int readInt(const char* prompt, int* out) {
     printf("%s", prompt);
     if (scanf("%d", out) != 1 || *out <= 0) {
-        clear_input();
+        clearInput();
         return 0;
     }
     return 1;
 }
 
-int read_double(const char* prompt, double* out) {
+int readDouble(const char* prompt, double* out) {
     printf("%s", prompt);
     if (scanf("%lf", out) != 1 || *out <= 0) {
-        clear_input();
+        clearInput();
         return 0;
     }
     return 1;
+}
+
+void drawWorldWithWalker(const WalkPathResult result, const int walkerX, const int walkerY) {
+    for (int x = 0; x < result.worldX; ++x) {
+        for (int y = 0; y < result.worldY; ++y) {
+            if (x == walkerX && y == walkerY) {
+                putchar('@');   // chodec
+            } else {
+                putchar(result.world[x][y]);
+            }
+        }
+        putchar('\n');
+    }
+}
+
+void drawPath(const WalkPathResult result) {
+    for (int i = 0; i < result.pathLen; ++i) {
+        printf("Step %d / %d : (%d, %d)\n", i, result.pathLen, result.path[i].x, result.path[i].y);
+        drawWorldWithWalker(
+            result,
+            result.path[i].x,
+            result.path[i].y
+        );
+        printf("\n");
+
+        usleep(200000); // 200 ms
+    }
 }
 
 int main(void) {
@@ -49,7 +75,7 @@ int main(void) {
             char ch;
             if (scanf(" %c", &ch) != 1) {
                 printf("Error while reading user input.\n");
-                clear_input();
+                clearInput();
                 successful = 0;
                 continue;
             }
@@ -69,12 +95,12 @@ int main(void) {
                 return 0;
             } else if (ch != 'Y' && ch != 'y') {
                 printf("Incorrect user input.\n");
-                clear_input();
+                clearInput();
                 successful = 0;
                 continue;
             }
 
-            if (!read_int("Choose simulation mode (1 -> summary, 2 -> interactive) ", &wantPath) ||
+            if (!readInt("Choose simulation mode (1 -> summary, 2 -> interactive) ", &wantPath) ||
                 (wantPath != 1 && wantPath != 2)) {
                 printf("Invalid mode selected.\n");
                 successful = 0;
@@ -82,8 +108,8 @@ int main(void) {
             }
 
             printf("Enter world size...\n");
-            if ((!read_int("Enter X length: ", &sizeX) ||
-                !read_int("Enter Y length: ", &sizeY)) ||
+            if ((!readInt("Enter X length: ", &sizeX) ||
+                !readInt("Enter Y length: ", &sizeY)) ||
                 (sizeX < 2 || sizeY < 2)) {
                 printf("Invalid size input, world must be at least 2x2.\n");
                 successful = 0;
@@ -93,8 +119,8 @@ int main(void) {
             printf("\nWorld size set to %dx%d.\n", sizeX, sizeY);
 
             printf("Enter starting position...\n");
-            if (!read_int("Enter starting X: ", &x) ||
-                !read_int("Enter starting Y: ", &y)) {
+            if (!readInt("Enter starting X: ", &x) ||
+                !readInt("Enter starting Y: ", &y)) {
                 printf("Invalid position input.\n");
                 successful = 0;
                 continue;
@@ -107,10 +133,10 @@ int main(void) {
             printf("\nStarting position set to [%d, %d].\n", x, y);
 
             printf("\nEnter direction probabilities...\n");
-            if (!read_double("Enter prob up: ", &up) ||
-                !read_double("Enter prob down: ", &down) ||
-                !read_double("Enter prob left: ", &left) ||
-                !read_double("Enter prob right: ", &right)) {
+            if (!readDouble("Enter prob up: ", &up) ||
+                !readDouble("Enter prob down: ", &down) ||
+                !readDouble("Enter prob left: ", &left) ||
+                !readDouble("Enter prob right: ", &right)) {
                 printf("Invalid probability input.\n");
                 successful = 0;
                 continue;
@@ -124,12 +150,12 @@ int main(void) {
             }
             printf("\nDirection probabilities set to {up: %lf, down: %lf, left: %lf, right: %lf}.\n\n", up, down, left, right);
 
-            if (!read_int("Enter max steps K: ", &K) || K <= 0) {
+            if (!readInt("Enter max steps K: ", &K) || K <= 0) {
                 printf("K must be > 0.\n");
                 successful = 0;
                 continue;
             }
-            if (!read_int("Enter replications count: ", &replications) || replications <= 0) {
+            if (!readInt("Enter replications count: ", &replications) || replications <= 0) {
                 printf("Replications must be > 0.\n");
                 successful = 0;
                 continue;
@@ -185,14 +211,7 @@ int main(void) {
                 return 1;
             }
 
-            // TODO: vykreslenie
-            for (int i = 0; i < res.pathLen; i++) {
-                printf("Step %d: (%d, %d)\n",
-                       i,
-                       res.path[i].x,
-                       res.path[i].y);
-                usleep(200000); // 200 ms
-            }
+            drawPath(res);
         }
     }
 }

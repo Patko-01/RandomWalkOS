@@ -22,7 +22,7 @@ int main(void) {
     const Position start = { 1, 1 };
 
     World world = createWorld(2, 2, 1, 1);
-    placeObstacles(world);
+    placeObstacles(&world);
     const WalkResults res = randomWalkReplications(start, pr, 33, 3, world);
 
     destroyWorld(&world);
@@ -75,7 +75,7 @@ int main(void) {
             req.p_right
         };
         World world = createWorld(req.sizeX, req.sizeY, req.startX, req.startY);
-        placeObstacles(world);
+        placeObstacles(&world);
 
         if (req.wantPath == 1) {
             WalkResults res = randomWalkReplications(start, pr, req.maxSteps, req.replications, world);

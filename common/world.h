@@ -1,7 +1,7 @@
 #ifndef PROJECTS_WORLD_H
 #define PROJECTS_WORLD_H
 
-#define WORLD_AT(w, x, y) ((w)->worldBuffer[(x) * (w)->sizeY + (y)]) //tento kod je od AI
+#define WORLD_AT(w, x, y) ((w)->worldBuffer[(y) * (w)->sizeX + (x)]) //tento kod je od AI
 
 typedef struct {
     int sizeX;
@@ -13,7 +13,7 @@ typedef struct {
 } World;
 
 World createWorld(int sizeX, int sizeY, int startX, int startY);
-void placeObstacles(World world);
+void placeObstacles(const World *world);
 void destroyWorld(World *w);
 
 #endif

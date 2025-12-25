@@ -3,7 +3,8 @@
 #include "world.h"
 
 #define MAX_PATH 2048
-#define MAX_WORLD 4096
+#define MAX_WORLD_X 100
+#define MAX_WORLD_Y 100
 
 typedef struct {
     int x;
@@ -24,8 +25,11 @@ typedef struct {
 
 typedef struct {
     int pathLen;
+    int worldX;
+    int worldY;
+
     Position path[MAX_PATH];
-    char world[MAX_WORLD];
+    char world[MAX_WORLD_X][MAX_WORLD_Y];
 } WalkPathResult;
 
 WalkResults randomWalkReplications(Position start, Probabilities pr, int K, int count, World world);
