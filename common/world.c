@@ -28,12 +28,12 @@ World createWorld(const int sizeX, const int sizeY, const int startX, const int 
 }
 
 void placeObstacles(const World world) {
-    int randX = (rand() % (world.sizeX - 1)) + 1;
-    int randY = (rand() % (world.sizeY - 1)) + 1;
+    int randX = (rand() % world.sizeX);
+    int randY = (rand() % (world.sizeY - 1));
 
-    while (randX == world.startX && randY == world.startY) {
-        randX = (rand() % (world.sizeX - 1)) + 1;
-        randY = (rand() % (world.sizeY - 1)) + 1;
+    while ((randX == 0 && randY == 0) || (randX == world.startX && randY == world.startY)) {
+        randX = (rand() % world.sizeX);
+        randY = (rand() % world.sizeY);
     }
 
     WORLD_AT(&world, randX, randY) = '#';

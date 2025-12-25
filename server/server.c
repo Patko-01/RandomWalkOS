@@ -8,16 +8,24 @@
 
 int main(void) {
     srand(time(NULL));
-    /* test
+
+    /*
     Position pos;
     pos.x = 1;
-    pos.y = 23;
+    pos.y = 1;
     Probabilities pr;
-    pr.p_up = 0.24;
-    pr.p_down = 0.26;
+    pr.p_up = 0.25;
+    pr.p_down = 0.25;
     pr.p_right = 0.25;
     pr.p_left = 0.25;
-    WalkResult res = randomWalkReplications(pos, pr, 123, 2);
+
+    const Position start = { 1, 1 };
+
+    World world = createWorld(2, 2, 1, 1);
+    placeObstacles(world);
+    const WalkResults res = randomWalkReplications(start, pr, 33, 3, world);
+
+    destroyWorld(&world);
 
     printf("avg steps %lf, suc prob %lf\n", res.avgStepCount, res.probSuccess);
     */
@@ -39,14 +47,10 @@ int main(void) {
     while (1) {
         printf("Waiting for client request.\n");
         SimRequest req;
-        int r = ipc_server_recv(&srv, (char*)&req, sizeof(SimRequest));
+        const int r = ipc_server_recv(&srv, (char*)&req, sizeof(SimRequest));
 
         if (r <= 0) {
             printf("Receive failed.\n");
-            ipc_server_stop(&srv);
-            return 1;
-        } else if (r != sizeof(SimRequest)) {
-            printf("Received wrong size.\n");
             ipc_server_stop(&srv);
             return 1;
         }
@@ -72,16 +76,26 @@ int main(void) {
         };
         World world = createWorld(req.sizeX, req.sizeY, req.startX, req.startY);
         placeObstacles(world);
-        WalkResults res = randomWalkReplications(start, pr, req.maxSteps, req.replications, world);
 
-        destroyWorld(&world);
+        if (req.wantPath == 1) {
+            WalkResults res = randomWalkReplications(start, pr, req.maxSteps, req.replications, world);
 
-        if (ipc_server_send(&srv, (char*)&res, sizeof(WalkResults)) <= 0) {
-            printf("Send failed.\n");
-            ipc_server_stop(&srv);
-            return 1;
+            if (ipc_server_send(&srv, (char*)&res, sizeof(WalkResults)) <= 0) {
+                printf("Send failed.\n");
+                ipc_server_stop(&srv);
+                return 1;
+            }
+        } else {
+            WalkPathResult res = randomWalkWithPath(start, pr, req.maxSteps, world);
+
+            if (ipc_server_send(&srv, (char*)&res, sizeof(WalkPathResult)) <= 0) {
+                printf("Send failed.\n");
+                ipc_server_stop(&srv);
+                return 1;
+            }
         }
 
+        destroyWorld(&world);
         printf("\nServer replied with simulation result.\n");
     }
 

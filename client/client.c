@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "../common/ipc.h"
 #include "../common/protocol.h"
@@ -39,11 +40,11 @@ int main(void) {
 
     while (1) {
         int successful = 0;
-        int x, y, K, replications, sizeX, sizeY;
+        int x, y, K, replications, sizeX, sizeY, wantPath;
         double up, down, left, right;
 
         while (!successful) {
-            printf("\nPress Y to continue or N to quit. (default Y) ");
+            printf("\nPress Y to continue or N to quit. ");
 
             char ch;
             if (scanf(" %c", &ch) != 1) {
@@ -69,6 +70,13 @@ int main(void) {
             } else if (ch != 'Y' && ch != 'y') {
                 printf("Incorrect user input.\n");
                 clear_input();
+                successful = 0;
+                continue;
+            }
+
+            if (!read_int("Choose simulation mode (1 -> summary, 2 -> interactive) ", &wantPath) ||
+                (wantPath != 1 && wantPath != 2)) {
+                printf("Invalid mode selected.\n");
                 successful = 0;
                 continue;
             }
@@ -108,7 +116,7 @@ int main(void) {
                 continue;
             }
 
-            double sum = fabs(up + down + left + right);
+            const double sum = fabs(up + down + left + right);
             if (sum < 0.999 || sum > 1.001) { // lebo sucet double nikdy nie je presne 1
                 printf("Probabilities must be >= 0 and sum to 1.\n");
                 successful = 0;
@@ -131,6 +139,7 @@ int main(void) {
         }
 
         SimRequest req;
+        req.wantPath = wantPath;
         req.startX = x;
         req.startY = y;
         req.sizeX = sizeX;
@@ -149,25 +158,41 @@ int main(void) {
         }
         printf("\nClient sent simulation request.\n");
 
-        WalkResults res;
+        if (wantPath == 1) {
+            WalkResults res;
 
-        int r = ipc_client_recv(&cli, (char*)&res, sizeof(res));
-        if (r <= 0) {
-            printf("Recieve failed.\n");
-            ipc_client_close(&cli);
-            return 1;
-        } else if (r != sizeof(WalkResults)) {
-            printf("Received wrong response from client.\n");
-            ipc_client_close(&cli);
-            return 1;
-        }
+            const int r = ipc_client_recv(&cli, (char*)&res, sizeof(WalkResults));
+            if (r <= 0) {
+                printf("Receive failed.\n");
+                ipc_client_close(&cli);
+                return 1;
+            }
 
-        printf("\nClient received simulation result.\n");
-        printf("Average steps: %.2f\n", res.avgStepCount);
-        printf("Success probability: %.2f\n", res.probSuccess);
+            printf("\nClient received simulation result.\n");
+            printf("Average steps: %.2f\n", res.avgStepCount);
+            printf("Success probability: %.2f\n", res.probSuccess);
 
-        if (res.probSuccess == -1) {
-            printf("Person in the simulation never reached [0, 0].\n");
+            if (res.probSuccess == -1) {
+                printf("Person in the simulation never reached [0, 0].\n");
+            }
+        } else {
+            WalkPathResult res;
+
+            const int r = ipc_client_recv(&cli, (char*)&res, sizeof(WalkPathResult));
+            if (r <= 0) {
+                printf("Receive failed.\n");
+                ipc_client_close(&cli);
+                return 1;
+            }
+
+            // TODO: vykreslenie
+            for (int i = 0; i < res.pathLen; i++) {
+                printf("Step %d: (%d, %d)\n",
+                       i,
+                       res.path[i].x,
+                       res.path[i].y);
+                usleep(200000); // 200 ms
+            }
         }
     }
 }

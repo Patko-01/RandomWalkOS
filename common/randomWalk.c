@@ -1,6 +1,8 @@
 #include "randomWalk.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
 
 typedef struct {
     int success;
@@ -51,11 +53,21 @@ int randomWalk(const Position start, const Probabilities pr, const int K, const 
             }
         } while (WORLD_AT(&world, currX, currY) == '#');
 
-        //TODO: check ci nepresiel za okraj
-        //TODO: zapis do fbuffe
+        if (currX < 0) {
+            currX = world.sizeX - 1;
+        } else if (currX >= world.sizeX) {
+            currX = 0;
+        }
+
+        if (currY < 0) {
+            currY = world.sizeY - 1;
+        } else if (currY >= world.sizeY) {
+            currY = 0;
+        }
 
         ++steps;
     }
+
     return -1;
 }
 
@@ -109,5 +121,52 @@ WalkResults randomWalkReplications(const Position start, const Probabilities pr,
     }
 
     pthread_mutex_destroy(&sh.mutex);
+    return result;
+}
+
+WalkPathResult randomWalkWithPath(const Position start, const Probabilities pr, const int K, const World world) {
+    unsigned int seed = (unsigned int)pthread_self();
+
+    WalkPathResult result;
+    int currX = start.x;
+    int currY = start.y;
+
+    result.pathLen = 0;
+
+    memset(result.path, 0, sizeof(char));
+    memcpy(result.world, world.worldBuffer, world.sizeX * world.sizeY);
+
+    for (int i = 0; i < K; ++i) {
+        if (currX == 0 && currY == 0) {
+            return result;
+        }
+
+        do {
+            const int direction = nextStep(pr, &seed);
+
+            switch (direction) {
+                case 0: ++currY; break;
+                case 1: --currY; break;
+                case 2: --currX; break;
+                case 3: ++currX; break;
+                default: ;
+            }
+        } while (WORLD_AT(&world, currX, currY) == '#');
+
+        if (currX < 0) {
+            currX = world.sizeX - 1;
+        } else if (currX >= world.sizeX) {
+            currX = 0;
+        }
+
+        if (currY < 0) {
+            currY = world.sizeY - 1;
+        } else if (currY >= world.sizeY) {
+            currY = 0;
+        }
+
+        result.path[result.pathLen++] = (Position) { currX, currY };
+    }
+
     return result;
 }
