@@ -30,19 +30,64 @@ int nextStep(const Probabilities pr, unsigned int *seed) {
     }
 }
 
-int randomWalk(const Position start, const Probabilities pr, const int K, const World world) {
+WalkPathResult randomWalk(const Position start, const Probabilities pr, const int K, const World world, const int withPath) {
     unsigned int seed = (unsigned int)pthread_self();
+
+    WalkPathResult result;
     int currX = start.x;
     int currY = start.y;
-    int steps = 0;
+
+    result.pathLen = 0;
+    result.worldX = world.sizeX;
+    result.worldY = world.sizeY;
+
+    memset(result.path, 0, sizeof(result.path));
+
+    if (withPath) {
+        result.path[result.pathLen++] = (Position){ currX, currY };
+
+        // copy of the world
+        for (int x = 0; x < world.sizeX; ++x) {
+            for (int y = 0; y < world.sizeY; ++y) {
+                result.world[x][y] = WORLD_AT(&world, x, y);
+            }
+        }
+    }
 
     for (int i = 0; i < K; ++i) {
         if (currX == 0 && currY == 0) {
-            return steps;
+            return result;
         }
 
-        do {
-            const int direction = nextStep(pr, &seed);
+        int usedDirections[4];
+        memset(usedDirections, -1, sizeof(usedDirections));
+
+        int index = 0;
+
+        while (1) {
+            int direction;
+
+            while (1) {
+                direction = nextStep(pr, &seed);
+
+                int found = 0;
+                for (int j = 0; j <= index; ++j) {
+                    if (direction == usedDirections[j]) {
+                        found = 1;
+                        break;
+                    }
+                    if (index >= 4) {
+                        found = 0; // tu by sa teoreticky nikdy nemal dostat, mapa by mala vzdy obsahovat cestu k (0,0)
+                    }
+                }
+
+                if (!found) {
+                    break;
+                }
+            }
+
+            const int oldCurrX = currX;
+            const int oldCurrY = currY;
 
             switch (direction) {
                 case 0: ++currY; break;
@@ -63,18 +108,30 @@ int randomWalk(const Position start, const Probabilities pr, const int K, const 
             } else if (currY >= world.sizeY) {
                 currY = 0;
             }
-        } while (WORLD_AT(&world, currX, currY) == '#');
 
-        ++steps;
+            if (WORLD_AT(&world, currX, currY) == '#') {
+                usedDirections[index++] = direction;
+                currX = oldCurrX;
+                currY = oldCurrY;
+            } else {
+                break;
+            }
+        }
+
+        if (withPath && result.pathLen < MAX_PATH) {
+            result.path[result.pathLen] = (Position) { currX, currY };
+        }
+
+        ++result.pathLen;
     }
 
-    return -1;
+    return result;
 }
 
 void *randomWalkRoutine(void* arg) {
     Shared *sh = (Shared*) arg;
 
-    const int steps = randomWalk(sh->start, sh->pr, sh->K, sh->world);
+    const int steps = randomWalk(sh->start, sh->pr, sh->K, sh->world, 0).pathLen;
 
     if (steps != -1) {
         pthread_mutex_lock(&sh->mutex);
@@ -125,56 +182,5 @@ WalkResults randomWalkReplications(const Position start, const Probabilities pr,
 }
 
 WalkPathResult randomWalkWithPath(const Position start, const Probabilities pr, const int K, const World world) {
-    unsigned int seed = (unsigned int)pthread_self();
-
-    WalkPathResult result;
-    int currX = start.x;
-    int currY = start.y;
-
-    result.pathLen = 0;
-    result.worldX = world.sizeX;
-    result.worldY = world.sizeY;
-
-    memset(result.path, 0, sizeof(result.path));
-    result.path[result.pathLen++] = (Position){ currX, currY };
-
-    for (int x = 0; x < world.sizeX; ++x) {
-        for (int y = 0; y < world.sizeY; ++y) {
-            result.world[x][y] = WORLD_AT(&world, x, y);
-        }
-    }
-
-    for (int i = 0; i < K; ++i) {
-        if (currX == 0 && currY == 0) {
-            return result;
-        }
-
-        do {
-            const int direction = nextStep(pr, &seed);
-
-            switch (direction) {
-                case 0: ++currY; break;
-                case 1: --currY; break;
-                case 2: --currX; break;
-                case 3: ++currX; break;
-                default: ;
-            }
-        } while (WORLD_AT(&world, currX, currY) == '#');
-
-        if (currX < 0) {
-            currX = world.sizeX - 1;
-        } else if (currX >= world.sizeX) {
-            currX = 0;
-        }
-
-        if (currY < 0) {
-            currY = world.sizeY - 1;
-        } else if (currY >= world.sizeY) {
-            currY = 0;
-        }
-
-        result.path[result.pathLen++] = (Position) { currX, currY };
-    }
-
-    return result;
+    return randomWalk(start, pr, K, world, 1);
 }

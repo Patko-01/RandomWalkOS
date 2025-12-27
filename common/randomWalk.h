@@ -2,7 +2,7 @@
 #define PROJECTS_RANDOM_WALK_H
 #include "world.h"
 
-#define MAX_PATH 2048
+#define MAX_PATH 1024
 #define MAX_WORLD_X 100
 #define MAX_WORLD_Y 100
 

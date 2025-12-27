@@ -2,7 +2,7 @@
 #define PROTOCOL_H
 
 typedef struct {
-    int wantPath; // 1 = stats, 2 = trajectory
+    int mode; // 1 = stats, 2 = trajectory
     int end;
 
     int startX;

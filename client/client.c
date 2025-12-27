@@ -1,9 +1,16 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <ctype.h>
+#include <limits.h>
 #include <math.h>
+#include <string.h>
 
 #include "../common/ipc.h"
 #include "../common/protocol.h"
 #include "../common/randomWalk.h"
+
+#define INPUT_BUFFER 64
 
 // tento kód mám od AI
 void clearInput(void) {
@@ -12,28 +19,58 @@ void clearInput(void) {
 }
 
 int readInt(const char* prompt, int* out) {
+    char input[INPUT_BUFFER];
+
     printf("%s", prompt);
-    if (scanf("%d", out) != 1 || *out <= 0) {
-        clearInput();
+
+    if (!fgets(input, sizeof(input), stdin)) {
+        return 0; // input error
+    }
+
+    const long value = strtol(input, NULL, 10);
+
+    if (value <= 0) {
         return 0;
     }
+
+    *out = (int)value;
     return 1;
 }
 
-int readDouble(const char* prompt, double* out) {
+int readDouble(const char* prompt, double* out, const double probSum, const int divider) {
     printf("%s", prompt);
-    if (scanf("%lf", out) != 1 || *out <= 0) {
-        clearInput();
-        return 0;
+
+    char input[INPUT_BUFFER];
+
+    if (!fgets(input, INPUT_BUFFER, stdin)) {
+        return 0; // input error
     }
-    return 1;
+
+    if (strlen(input) > 0 && input[strlen(input) - 1] == '\n') {
+        input[strlen(input) - 1] = '\0';
+    }
+
+    if (strchr(input, '*') != NULL) {
+        *out = (1 - probSum) / divider;
+        return 1;
+    } else {
+        char *endPtr;
+        const double value = strtod(input, &endPtr);
+
+        if (endPtr == input || value <= 0) {
+            return 0;
+        } else {
+            *out = value;
+            return 1;
+        }
+    }
 }
 
 void drawWorldWithWalker(const WalkPathResult result, const int walkerX, const int walkerY) {
-    for (int x = 0; x < result.worldX; ++x) {
-        for (int y = 0; y < result.worldY; ++y) {
+    for (int y = 0; y < result.worldY; ++y) {
+        for (int x = 0; x < result.worldX; ++x) {
             if (x == walkerX && y == walkerY) {
-                putchar('@');   // chodec
+                putchar('@'); // walker
             } else {
                 putchar(result.world[x][y]);
             }
@@ -44,7 +81,7 @@ void drawWorldWithWalker(const WalkPathResult result, const int walkerX, const i
 
 void drawPath(const WalkPathResult result) {
     for (int i = 0; i < result.pathLen; ++i) {
-        printf("Step %d / %d : (%d, %d)\n", i, result.pathLen, result.path[i].x, result.path[i].y);
+        printf("Step %d / %d : (%d, %d)\n", i, result.pathLen - 1, result.path[i].x, result.path[i].y);
         drawWorldWithWalker(
             result,
             result.path[i].x,
@@ -56,6 +93,8 @@ void drawPath(const WalkPathResult result) {
     }
 }
 
+// TODO: advanced options kde nastavuj
+
 int main(void) {
     ipc_client cli;
     if (ipc_client_connect(&cli, IPC_PORT) != 0) {
@@ -66,14 +105,14 @@ int main(void) {
 
     while (1) {
         int successful = 0;
-        int x, y, K, replications, sizeX, sizeY, wantPath;
+        int x, y, K, replications, sizeX, sizeY, mode;
         double up, down, left, right;
 
         while (!successful) {
             printf("\nPress Y to continue or N to quit. ");
 
             char ch;
-            if (scanf(" %c", &ch) != 1) {
+            if (scanf("%c", &ch) != 1) {
                 printf("Error while reading user input.\n");
                 clearInput();
                 successful = 0;
@@ -99,9 +138,10 @@ int main(void) {
                 successful = 0;
                 continue;
             }
+            clearInput();
 
-            if (!readInt("Choose simulation mode (1 -> summary, 2 -> interactive) ", &wantPath) ||
-                (wantPath != 1 && wantPath != 2)) {
+            if (!readInt("Choose simulation mode (1 -> summary, 2 -> interactive) ", &mode) ||
+                (mode != 1 && mode != 2)) {
                 printf("Invalid mode selected.\n");
                 successful = 0;
                 continue;
@@ -112,6 +152,11 @@ int main(void) {
                 !readInt("Enter Y length: ", &sizeY)) ||
                 (sizeX < 2 || sizeY < 2)) {
                 printf("Invalid size input, world must be at least 2x2.\n");
+                successful = 0;
+                continue;
+            }
+            if (mode == 2 && (sizeX >= MAX_WORLD_X || sizeY >= MAX_WORLD_Y)) {
+                printf("Invalid size input, cannot be bigger than %dx%d.\n", MAX_WORLD_X, MAX_WORLD_Y);
                 successful = 0;
                 continue;
             }
@@ -133,10 +178,10 @@ int main(void) {
             printf("\nStarting position set to [%d, %d].\n", x, y);
 
             printf("\nEnter direction probabilities...\n");
-            if (!readDouble("Enter prob up: ", &up) ||
-                !readDouble("Enter prob down: ", &down) ||
-                !readDouble("Enter prob left: ", &left) ||
-                !readDouble("Enter prob right: ", &right)) {
+            if (!readDouble("Enter prob up: ", &up, 0, 4) ||
+                !readDouble("Enter prob down: ", &down, up, 3) ||
+                !readDouble("Enter prob left: ", &left, (up + down), 2) ||
+                !readDouble("Enter prob right: ", &right, (up + down + left), 1)) {
                 printf("Invalid probability input.\n");
                 successful = 0;
                 continue;
@@ -150,22 +195,30 @@ int main(void) {
             }
             printf("\nDirection probabilities set to {up: %lf, down: %lf, left: %lf, right: %lf}.\n\n", up, down, left, right);
 
-            if (!readInt("Enter max steps K: ", &K) || K <= 0) {
+            if (!readInt("Enter max steps K: ", &K)) {
                 printf("K must be > 0.\n");
                 successful = 0;
                 continue;
             }
-            if (!readInt("Enter replications count: ", &replications) || replications <= 0) {
-                printf("Replications must be > 0.\n");
+            if (mode == 2 && K >= MAX_PATH - 1) {
+                printf("K must be <= %d.\n", MAX_PATH - 1);
                 successful = 0;
                 continue;
+            }
+
+            if (mode == 1) {
+                if (!readInt("Enter replications count: ", &replications) || replications <= 0) {
+                    printf("Replications must be > 0.\n");
+                    successful = 0;
+                    continue;
+                }
             }
 
             successful = 1;
         }
 
         SimRequest req;
-        req.wantPath = wantPath;
+        req.mode = mode;
         req.startX = x;
         req.startY = y;
         req.sizeX = sizeX;
@@ -184,7 +237,7 @@ int main(void) {
         }
         printf("\nClient sent simulation request.\n");
 
-        if (wantPath == 1) {
+        if (mode == 1) {
             WalkResults res;
 
             const int r = ipc_client_recv(&cli, (char*)&res, sizeof(WalkResults));
@@ -201,7 +254,7 @@ int main(void) {
             if (res.probSuccess == -1) {
                 printf("Person in the simulation never reached [0, 0].\n");
             }
-        } else {
+        } else if (mode == 2) {
             WalkPathResult res;
 
             const int r = ipc_client_recv(&cli, (char*)&res, sizeof(WalkPathResult));

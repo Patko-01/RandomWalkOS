@@ -55,11 +55,11 @@ int main(void) {
             return 1;
         }
 
-        printf("\nRequest received.\n");
-
         if (req.end == 1) {
             printf("End request received.\n");
             break;
+        } else {
+            printf("Request received.\n");
         }
 
         printf("World = %dx%d\n", req.sizeX, req.sizeY);
@@ -77,7 +77,7 @@ int main(void) {
         World world = createWorld(req.sizeX, req.sizeY, req.startX, req.startY);
         placeObstacles(&world);
 
-        if (req.wantPath == 1) {
+        if (req.mode == 1) {
             WalkResults res = randomWalkReplications(start, pr, req.maxSteps, req.replications, world);
 
             if (ipc_server_send(&srv, (char*)&res, sizeof(WalkResults)) <= 0) {
@@ -85,7 +85,7 @@ int main(void) {
                 ipc_server_stop(&srv);
                 return 1;
             }
-        } else {
+        } else if (req.mode == 2) {
             WalkPathResult res = randomWalkWithPath(start, pr, req.maxSteps, world);
 
             if (ipc_server_send(&srv, (char*)&res, sizeof(WalkPathResult)) <= 0) {
