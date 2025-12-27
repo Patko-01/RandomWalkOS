@@ -34,6 +34,7 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
     unsigned int seed = (unsigned int)pthread_self();
 
     WalkPathResult result;
+    result.success = 0;
     int currX = start.x;
     int currY = start.y;
 
@@ -56,6 +57,7 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
 
     for (int i = 0; i < K; ++i) {
         if (currX == 0 && currY == 0) {
+            result.success = 1;
             return result;
         }
 
@@ -90,8 +92,8 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
             const int oldCurrY = currY;
 
             switch (direction) {
-                case 0: ++currY; break;
-                case 1: --currY; break;
+                case 0: --currY; break;
+                case 1: ++currY; break;
                 case 2: --currX; break;
                 case 3: ++currX; break;
                 default: ;
@@ -131,11 +133,11 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
 void *randomWalkRoutine(void* arg) {
     Shared *sh = (Shared*) arg;
 
-    const int steps = randomWalk(sh->start, sh->pr, sh->K, sh->world, 0).pathLen;
+    const WalkPathResult result = randomWalk(sh->start, sh->pr, sh->K, sh->world, 0);
 
-    if (steps != -1) {
+    if (result.success) {
         pthread_mutex_lock(&sh->mutex);
-        sh->stepCount += steps;
+        sh->stepCount += result.pathLen;
         sh->success++;
         pthread_mutex_unlock(&sh->mutex);
     }

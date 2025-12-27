@@ -28,6 +28,8 @@ typedef struct {
     int worldX;
     int worldY;
 
+    int success;
+
     Position path[MAX_PATH];
     char world[MAX_WORLD_X][MAX_WORLD_Y];
 } WalkPathResult;

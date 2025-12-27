@@ -57,7 +57,7 @@ int readDouble(const char* prompt, double* out, const double probSum, const int 
         char *endPtr;
         const double value = strtod(input, &endPtr);
 
-        if (endPtr == input || value <= 0) {
+        if (endPtr == input || value < 0) {
             return 0;
         } else {
             *out = value;
@@ -91,9 +91,13 @@ void drawPath(const WalkPathResult result) {
 
         usleep(200000); // 200 ms
     }
+
+    if (result.success) {
+        printf("Walker successfully walked to (0, 0).\n");
+    }
 }
 
-// TODO: advanced options kde nastavuj
+// TODO: (optional) advanced options kde nastavuj
 
 int main(void) {
     ipc_client cli;
@@ -155,7 +159,7 @@ int main(void) {
                 successful = 0;
                 continue;
             }
-            if (mode == 2 && (sizeX >= MAX_WORLD_X || sizeY >= MAX_WORLD_Y)) {
+            if (mode == 2 && (sizeX > MAX_WORLD_X || sizeY > MAX_WORLD_Y)) {
                 printf("Invalid size input, cannot be bigger than %dx%d.\n", MAX_WORLD_X, MAX_WORLD_Y);
                 successful = 0;
                 continue;
@@ -163,7 +167,7 @@ int main(void) {
 
             printf("\nWorld size set to %dx%d.\n", sizeX, sizeY);
 
-            printf("Enter starting position...\n");
+            printf("\nEnter starting position...\n");
             if (!readInt("Enter starting X: ", &x) ||
                 !readInt("Enter starting Y: ", &y)) {
                 printf("Invalid position input.\n");
@@ -200,7 +204,7 @@ int main(void) {
                 successful = 0;
                 continue;
             }
-            if (mode == 2 && K >= MAX_PATH - 1) {
+            if (mode == 2 && K > MAX_PATH - 1) {
                 printf("K must be <= %d.\n", MAX_PATH - 1);
                 successful = 0;
                 continue;
