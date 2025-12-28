@@ -158,7 +158,7 @@ WalkResults randomWalkReplications(const Position start, const Probabilities pr,
 
     pthread_mutex_init(&sh.mutex, NULL);
 
-    WalkResults result = {-1, -1};
+    WalkResults result = {0, -1};
 
     for (int i = 0; i < count; ++i) {
         if (pthread_create(&th[i], NULL, randomWalkRoutine, (void*) &sh) != 0) {

@@ -27,6 +27,16 @@ World createWorld(const int sizeX, const int sizeY, const int startX, const int 
     return w;
 }
 
+int isSafeToStart(const World world, const int x, const int y) {
+    if (x == 0 && y == 0) {
+        return 0;
+    }
+    if (WORLD_AT(&world, x, y) == '#') {
+        return 0;
+    }
+    return 1;
+}
+
 void placeObstacles(const World *world) {
     int randX = (rand() % world->sizeX);
     int randY = (rand() % world->sizeY);

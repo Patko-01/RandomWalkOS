@@ -25,3 +25,6 @@ add_executable(client
         common/randomWalk.h
         common/protocol.h
 )
+
+# Link math library
+target_link_libraries(client PRIVATE m)

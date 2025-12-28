@@ -2,7 +2,7 @@
 #define PROTOCOL_H
 
 typedef struct {
-    int mode; // 1 = stats, 2 = trajectory
+    int mode; // 1 = summary, 2 = interactive
     int end;
 
     int startX;
@@ -16,7 +16,7 @@ typedef struct {
     double p_left;
     double p_right;
 
-    int maxSteps;     //K
+    int maxSteps;     // K
     int replications;
 } SimRequest;
 

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include "../common/ipc.h"
 #include "../common/world.h"
@@ -45,7 +46,7 @@ int main(void) {
     printf("Client connected.\n");
 
     while (1) {
-        printf("Waiting for client request.\n");
+        printf("\nWaiting for client request.\n");
         SimRequest req;
         const int r = ipc_server_recv(&srv, (char*)&req, sizeof(SimRequest));
 
@@ -62,12 +63,14 @@ int main(void) {
             printf("Request received.\n");
         }
 
+        if (req.mode == 1) {
+            printf("Mode = summary\n");
+        } else if (req.mode == 2) {
+            printf("Mode = interactive\n");
+        }
         printf("World = %dx%d\n", req.sizeX, req.sizeY);
-        printf("Start = [%d, %d]\n", req.startX, req.startY);
         printf("K = %d, replications = %d\n", req.maxSteps, req.replications);
 
-        //simulation
-        const Position start = { req.startX, req.startY };
         const Probabilities pr = {
             req.p_up,
             req.p_down,
@@ -78,14 +81,26 @@ int main(void) {
         placeObstacles(&world);
 
         if (req.mode == 1) {
-            WalkResults res = randomWalkReplications(start, pr, req.maxSteps, req.replications, world);
+            WalkResults res[req.sizeY][req.sizeX];
 
-            if (ipc_server_send(&srv, (char*)&res, sizeof(WalkResults)) <= 0) {
+            memset(res, 0, req.sizeX * req.sizeY * sizeof(WalkResults));
+
+            for (int y = 0; y < req.sizeY; y++) {
+                for (int x = 0; x < req.sizeX; x++) {
+                    if (isSafeToStart(world, x, y)) {
+                        const Position start = { x, y };
+                        res[y][x] = randomWalkReplications(start, pr, req.maxSteps, req.replications, world);
+                    }
+                }
+            }
+
+            if (ipc_server_send(&srv, (char*)&res, req.sizeX * req.sizeY * sizeof(WalkResults)) <= 0) {
                 printf("Send failed.\n");
                 ipc_server_stop(&srv);
                 return 1;
             }
         } else if (req.mode == 2) {
+            const Position start = { req.startX, req.startY };
             WalkPathResult res = randomWalkWithPath(start, pr, req.maxSteps, world);
 
             if (ipc_server_send(&srv, (char*)&res, sizeof(WalkPathResult)) <= 0) {
@@ -96,7 +111,7 @@ int main(void) {
         }
 
         destroyWorld(&world);
-        printf("\nServer replied with simulation result.\n");
+        printf("Server replied with simulation result.\n");
     }
 
     ipc_server_stop(&srv);

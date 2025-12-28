@@ -1,8 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
-#include <ctype.h>
-#include <limits.h>
 #include <math.h>
 #include <string.h>
 
@@ -97,7 +94,60 @@ void drawPath(const WalkPathResult result) {
     }
 }
 
-// TODO: (optional) advanced options kde nastavuj
+void drawResultMap(const int sizeX, const int sizeY, const WalkResults results[sizeY][sizeX], const int printMode) { // VLA
+    double highestAvgStepCount = 0;
+
+    for (int y = 0; y < sizeY; ++y) {
+        for (int x = 0; x < sizeX; ++x) {
+            if (results[y][x].avgStepCount > highestAvgStepCount) {
+                highestAvgStepCount = results[y][x].avgStepCount;
+            }
+        }
+    }
+
+    int mostDigits = 1;
+    if (printMode == 2) {
+        if ((int)highestAvgStepCount > 0) {
+            mostDigits = (int)log10(abs((int)highestAvgStepCount)) + 1;
+        }
+
+        if (mostDigits < 2) {
+            mostDigits = 2;
+        }
+
+        mostDigits += 3; // lebo 2 desatinne miesta + bodka
+    }
+
+    for (int y = 0; y < sizeY; ++y) {
+        for (int x = 0; x < sizeX; ++x) {
+            int currCellWidth = 5; // default v pripade W, # alebo -1.00
+
+            if (x == 0 && y == 0) {
+                printf("  W  ");
+            } else if (results[y][x].avgStepCount == 0) {
+                printf("  #  ");
+            } else {
+                if (printMode == 1) {
+                    printf("%.2f ", results[y][x].probSuccess);
+                } else if (printMode == 2) {
+                    printf("%.2f", results[y][x].avgStepCount);
+
+                    if (results[y][x].avgStepCount > 0) {
+                        currCellWidth = (int)log10(abs((int)results[y][x].avgStepCount)) + 1;
+                        currCellWidth += 3;
+                    }
+                }
+            }
+
+            if (printMode == 2) {
+                printf("%*s", (mostDigits - currCellWidth) + 1, ""); // +1 pre medzeru medzi vypismi
+            }
+        }
+        printf("\n");
+    }
+
+    printf("Highest average step count: %.4f\n", highestAvgStepCount);
+}
 
 int main(void) {
     ipc_client cli;
@@ -109,7 +159,7 @@ int main(void) {
 
     while (1) {
         int successful = 0;
-        int x, y, K, replications, sizeX, sizeY, mode;
+        int x, y, K, replications, sizeX, sizeY, mode, printMode;
         double up, down, left, right;
 
         while (!successful) {
@@ -146,12 +196,21 @@ int main(void) {
 
             if (!readInt("Choose simulation mode (1 -> summary, 2 -> interactive) ", &mode) ||
                 (mode != 1 && mode != 2)) {
-                printf("Invalid mode selected.\n");
+                printf("Invalid simulation mode selected.\n");
                 successful = 0;
                 continue;
             }
 
-            printf("Enter world size...\n");
+            if (mode == 1) {
+                if (!readInt("Choose printing mode (1 -> probabilities, 2 -> steps count) ", &printMode) ||
+                    (printMode != 1 && printMode != 2)) {
+                    printf("Invalid printing mode selected.\n");
+                    successful = 0;
+                    continue;
+                    }
+            }
+
+            printf("\nEnter world size...\n");
             if ((!readInt("Enter X length: ", &sizeX) ||
                 !readInt("Enter Y length: ", &sizeY)) ||
                 (sizeX < 2 || sizeY < 2)) {
@@ -167,19 +226,21 @@ int main(void) {
 
             printf("\nWorld size set to %dx%d.\n", sizeX, sizeY);
 
-            printf("\nEnter starting position...\n");
-            if (!readInt("Enter starting X: ", &x) ||
-                !readInt("Enter starting Y: ", &y)) {
-                printf("Invalid position input.\n");
-                successful = 0;
-                continue;
-            } else if (x >= sizeX || y >= sizeY) {
-                printf("Starting position can't be outside the world.\n");
-                successful = 0;
-                continue;
-            }
+            if (mode == 2) {
+                printf("\nEnter starting position...\n");
+                if (!readInt("Enter starting X: ", &x) ||
+                    !readInt("Enter starting Y: ", &y)) {
+                    printf("Invalid position input.\n");
+                    successful = 0;
+                    continue;
+                    } else if (x >= sizeX || y >= sizeY) {
+                        printf("Starting position can't be outside the world.\n");
+                        successful = 0;
+                        continue;
+                    }
 
-            printf("\nStarting position set to [%d, %d].\n", x, y);
+                printf("\nStarting position set to [%d, %d].\n", x, y);
+            }
 
             printf("\nEnter direction probabilities...\n");
             if (!readDouble("Enter prob up: ", &up, 0, 4) ||
@@ -242,9 +303,9 @@ int main(void) {
         printf("\nClient sent simulation request.\n");
 
         if (mode == 1) {
-            WalkResults res;
+            WalkResults res[sizeY][sizeX];
 
-            const int r = ipc_client_recv(&cli, (char*)&res, sizeof(WalkResults));
+            const int r = ipc_client_recv(&cli, (char*)&res, sizeX * sizeY * sizeof(WalkResults));
             if (r <= 0) {
                 printf("Receive failed.\n");
                 ipc_client_close(&cli);
@@ -252,12 +313,8 @@ int main(void) {
             }
 
             printf("\nClient received simulation result.\n");
-            printf("Average steps: %.2f\n", res.avgStepCount);
-            printf("Success probability: %.2f\n", res.probSuccess);
 
-            if (res.probSuccess == -1) {
-                printf("Person in the simulation never reached [0, 0].\n");
-            }
+            drawResultMap(sizeX, sizeY, res, printMode);
         } else if (mode == 2) {
             WalkPathResult res;
 
