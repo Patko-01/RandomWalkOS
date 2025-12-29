@@ -17,13 +17,13 @@ int ipc_server_start(ipc_server* srv, const char* port) {
 
     const int listenSock = socket(AF_INET, SOCK_STREAM, 0);
     if (listenSock < 0) {
-        printf("Socket failed.\n");
+        printf("\033[31mServer socket failed.\033[0m\n");
         return -1;
     }
 
-    int opt = 1;
+    const int opt = 1;
     if (setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        printf("Setsockopt(SO_REUSEADDR) failed.\n");
+        printf("\033[31mServer setsockopt(SO_REUSEADDR) failed.\033[0m\n");
         close(listenSock);
         return -1;
     }
@@ -34,13 +34,13 @@ int ipc_server_start(ipc_server* srv, const char* port) {
     sa.sin_port = htons((unsigned short)atoi(port));
 
     if (bind(listenSock, (struct sockaddr*)&sa, sizeof(sa)) < 0) {
-        printf("Bind (localhost) failed.\n");
+        printf("\033[31mServer bind (localhost) failed.\033[0m\n");
         close(listenSock);
         return -1;
     }
 
     if (listen(listenSock, NUMBER_OF_CLIENTS) < 0) {
-        printf("Listen failed.\n");
+        printf("\033[31mServer listen failed.\033[0m\n");
         close(listenSock);
         return -1;
     }
@@ -53,9 +53,9 @@ int ipc_server_accept(ipc_server* srv) {
     if (!srv || srv->listen_sock < 0) {
         return -1;
     }
-    int clientSock = accept(srv->listen_sock, NULL, NULL);
+    const int clientSock = accept(srv->listen_sock, NULL, NULL);
     if (clientSock < 0) {
-        printf("Accept failed.\n");
+        printf("\033[31mServer accept failed.\033[0m\n");
         return -1;
     }
     srv->conn_sock = clientSock;
@@ -66,7 +66,7 @@ int ipc_server_recv(ipc_server* srv, char* buf, size_t buf_size) {
     if (!srv || srv->conn_sock < 0 || !buf) {
         return -1;
     }
-    ssize_t r = recv(srv->conn_sock, buf, buf_size, 0);
+    const ssize_t r = recv(srv->conn_sock, buf, buf_size, 0);
     if (r < 0) {
         return -1;
     }
@@ -77,7 +77,7 @@ int ipc_server_send(ipc_server* srv, const char* buf, size_t len) {
     if (!srv || srv->conn_sock < 0 || !buf) {
         return -1;
     }
-    ssize_t s = send(srv->conn_sock, buf, len, 0);
+    const ssize_t s = send(srv->conn_sock, buf, len, 0);
     if (s < 0) {
         return -1;
     }
@@ -112,21 +112,21 @@ int ipc_client_connect(ipc_client* cli, const char* port) {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    int rv = getaddrinfo("127.0.0.1", port, &hints, &result);
+    const int rv = getaddrinfo("127.0.0.1", port, &hints, &result);
     if (rv != 0) {
-        printf("Getaddrinfo failed.\n");
+        printf("\033[31mClient getaddrinfo failed.\033[0m\n");
         return -1;
     }
 
-    int s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    const int s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     if (s < 0) {
-        printf("Socket failed.\n");
+        printf("\033[31mClient socket failed.\033[0m\n");
         freeaddrinfo(result);
         return -1;
     }
 
     if (connect(s, result->ai_addr, result->ai_addrlen) < 0) {
-        printf("Connect failed.\n");
+        printf("\033[31mClient connect failed.\033[0m\n");
         close(s);
         freeaddrinfo(result);
         return -1;
@@ -138,22 +138,22 @@ int ipc_client_connect(ipc_client* cli, const char* port) {
     return 0;
 }
 
-int ipc_client_recv(ipc_client* cli, char* buf, size_t buf_size) {
+int ipc_client_recv(ipc_client* cli, char* buf, const size_t buf_size) {
     if (!cli || cli->sock < 0 || !buf) {
         return -1;
     }
-    ssize_t r = recv(cli->sock, buf, buf_size, 0);
+    const ssize_t r = recv(cli->sock, buf, buf_size, 0);
     if (r < 0) {
         return -1;
     }
     return (int)r;
 }
 
-int ipc_client_send(ipc_client* cli, const char* buf, size_t len) {
+int ipc_client_send(ipc_client* cli, const char* buf, const size_t len) {
     if (!cli || cli->sock < 0 || !buf) {
         return -1;
     }
-    ssize_t s = send(cli->sock, buf, len, 0);
+    const ssize_t s = send(cli->sock, buf, len, 0);
     if (s < 0) {
         return -1;
     }

@@ -9,36 +9,16 @@
 
 int main(void) {
     srand(time(NULL));
-    /* testing
-    Position pos;
-    pos.x = 1;
-    pos.y = 1;
-    Probabilities pr;
-    pr.p_up = 0.25;
-    pr.p_down = 0.25;
-    pr.p_right = 0.25;
-    pr.p_left = 0.25;
-
-    const Position start = { 1, 1 };
-
-    World world = createWorld(2, 2);
-    placeObstacles(&world);
-    const WalkResult res = randomWalkReplications(start, pr, 33, 3, world);
-
-    destroyWorld(&world);
-
-    printf("avg steps %lf, suc prob %lf\n", res.avgStepCount, res.probSuccess);
-    */
 
     ipc_server srv;
     if (ipc_server_start(&srv, IPC_PORT) != 0) {
-        printf("Server start failed.\n");
+        printf("\033[31mServer start failed.\033[0m\n");
         return 1;
     }
     printf("Server listening on port %s...\n", IPC_PORT);
 
     if (ipc_server_accept(&srv) != 0) {
-        printf("Accept failed.\n");
+        printf("\033[31mAccept failed.\033[0m\n");
         ipc_server_stop(&srv);
         return 1;
     }
@@ -49,7 +29,7 @@ int main(void) {
         const int er = ipc_server_recv(&srv, (char*)&endReq, sizeof(EndRequest));
 
         if (er <= 0) {
-            printf("Receive failed (end).\n");
+            printf("\033[31mReceive failed (end).\033[0m\n");
             ipc_server_stop(&srv);
             return 1;
         }
@@ -66,7 +46,7 @@ int main(void) {
         const int mreq = ipc_server_recv(&srv, (char*)&modeReq, sizeof(ModeRequest));
 
         if (mreq <= 0) {
-            printf("Receive failed (mode).\n");
+            printf("\033[31mReceive failed (mode).\033[0m\n");
             ipc_server_stop(&srv);
             return 1;
         }
@@ -78,7 +58,7 @@ int main(void) {
         const int mr = ipc_server_recv(&srv, (char*)&mapReq, sizeof(MapRequest));
 
         if (mr <= 0) {
-            printf("Receive failed (map).\n");
+            printf("\033[31mReceive failed (map).\033[0m\n");
             ipc_server_stop(&srv);
             return 1;
         }
@@ -97,7 +77,7 @@ int main(void) {
                 const int sr = ipc_server_recv(&srv, (char*)&startReq, sizeof(StartPositionRequest));
 
                 if (sr <= 0) {
-                    printf("Receive failed (starting position).\n");
+                    printf("\033[31mReceive failed (starting position).\033[0m\n");
                     ipc_server_stop(&srv);
                     return 1;
                 }
@@ -111,7 +91,7 @@ int main(void) {
                     pr.notOk = 0;
 
                     if (ipc_server_send(&srv, (char*)&pr, sizeof(StartPositionResult)) <= 0) {
-                        printf("Send failed (position request result).\n");
+                        printf("\033[31mReceive failed (position request result).\033[0m\n");
                         ipc_server_stop(&srv);
                         return 1;
                     }
@@ -123,7 +103,7 @@ int main(void) {
                     pr.notOk = 1;
 
                     if (ipc_server_send(&srv, (char*)&pr, sizeof(StartPositionResult)) <= 0) {
-                        printf("Send failed (position request result).\n");
+                        printf("\033[31mReceive failed (position request result).\033[0m\n");
                         ipc_server_stop(&srv);
                         return 1;
                     }
@@ -137,7 +117,7 @@ int main(void) {
         const int r = ipc_server_recv(&srv, (char*)&req, sizeof(SimRequest));
 
         if (r <= 0) {
-            printf("Receive failed.\n");
+            printf("\033[31mReceive failed (simulation).\033[0m\n");
             ipc_server_stop(&srv);
             return 1;
         }
@@ -179,7 +159,7 @@ int main(void) {
             }
 
             if (ipc_server_send(&srv, (char*)&res, mapReq.sizeX * mapReq.sizeY * sizeof(WalkResult)) <= 0) {
-                printf("Send failed (simulation result).\n");
+                printf("\033[31mSend failed (simulation result).\033[0m\n");
                 ipc_server_stop(&srv);
                 return 1;
             }
@@ -188,7 +168,7 @@ int main(void) {
             WalkPathResult res = randomWalkWithPath(start, pr, req.maxSteps, world);
 
             if (ipc_server_send(&srv, (char*)&res, sizeof(WalkPathResult)) <= 0) {
-                printf("Send failed (simulation result).\n");
+                printf("\033[31mSend failed (simulation result).\033[0m\n");
                 ipc_server_stop(&srv);
                 return 1;
             }

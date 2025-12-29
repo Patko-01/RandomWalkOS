@@ -15,7 +15,7 @@ World createWorld(const int sizeX, const int sizeY) {
     WORLD_AT(&w, 0, 0) = 'W';
 
     if (w.worldBuffer == NULL) {
-        printf("Failed to allocate world.\n");
+        printf("\033[31mFailed to allocate world.\033[0m\n");
         w.sizeX = 0;
         w.sizeY = 0;
     }

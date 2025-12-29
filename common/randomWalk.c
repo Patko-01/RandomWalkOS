@@ -162,14 +162,14 @@ WalkResult randomWalkReplications(const Position start, const Probabilities pr, 
 
     for (int i = 0; i < count; ++i) {
         if (pthread_create(&th[i], NULL, randomWalkRoutine, (void*) &sh) != 0) {
-            fprintf(stderr, "Thread create failed.\n");
+            printf("\033[31mThread create failed.\033[0m\n");
             return result;
         }
     }
 
     for (int i = 0; i < count; ++i) {
         if (pthread_join(th[i], NULL) != 0) {
-            fprintf(stderr, "Thread join failed.\n");
+            printf("\033[31mThread join failed.\033[0m\n");
             return result;
         }
     }

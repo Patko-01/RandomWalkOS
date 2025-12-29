@@ -177,7 +177,7 @@ void drawResultMap(const int sizeX, const int sizeY, const WalkResult results[si
 int main(void) {
     ipc_client cli;
     if (ipc_client_connect(&cli, IPC_PORT) != 0) {
-        printf("Connection failed.\n");
+        printf("\033[31mConnection failed.\033[0m\n");
         return 1;
     }
     printf("Client connected to port %s.\n", IPC_PORT);
@@ -187,12 +187,11 @@ int main(void) {
         double up, down, left, right;
 
         while (1) {
-            printf("\033[31mThis text is red!\033[0m\n");   // 31 = red
             printf("\nPress Y to continue or N to quit. ");
 
             char ch;
             if (scanf("%c", &ch) != 1) {
-                printf("Error while reading user input.\n");
+                printf("\033[31mError while reading user input.\033[0m\n");
                 clearInput();
                 continue;
             }
@@ -202,7 +201,7 @@ int main(void) {
                 req.end = 1;
 
                 if (ipc_client_send(&cli, (char*)&req, sizeof(EndRequest)) <= 0) {
-                    printf("Send failed (exit).\n");
+                    printf("\033[31mSend failed (exit).\033[0m\n");
                     ipc_client_close(&cli);
                     return 1;
                 }
@@ -211,7 +210,7 @@ int main(void) {
                 ipc_client_close(&cli);
                 return 0;
             } else if (ch != 'Y' && ch != 'y') {
-                printf("Incorrect user input.\n");
+                printf("\033[31mIncorrect user input.\033[0m\n");
                 clearInput();
                 continue;
             }
@@ -219,7 +218,7 @@ int main(void) {
             req.end = 0;
 
             if (ipc_client_send(&cli, (char*)&req, sizeof(EndRequest)) <= 0) {
-                printf("Send failed (exit).\n");
+                printf("\033[31mSend failed (exit).\033[0m\n");
                 ipc_client_close(&cli);
                 return 1;
             }
@@ -227,14 +226,14 @@ int main(void) {
 
             if (!readInt("Choose simulation mode (1 -> summary, 2 -> interactive) ", &mode) ||
                 (mode != 1 && mode != 2)) {
-                printf("Invalid simulation mode selected.\n");
+                printf("\033[31mInvalid simulation mode selected.\033[0m\n");
                 continue;
             }
 
             ModeRequest modeReq;
             modeReq.mode = mode;
             if (ipc_client_send(&cli, (char*)&modeReq, sizeof(ModeRequest)) <= 0) {
-                printf("Send failed (mode).\n");
+                printf("\033[31mSend failed (mode).\033[0m\n");
                 ipc_client_close(&cli);
                 return 1;
             }
@@ -243,14 +242,14 @@ int main(void) {
             if (mode == 1) {
                 if (!readInt("Choose printing mode (1 -> probabilities, 2 -> steps count) ", &printMode) ||
                     (printMode != 1 && printMode != 2)) {
-                    printf("Invalid printing mode selected.\n");
+                    printf("\033[31mInvalid printing mode selected.\033[0m\n");
                     continue;
                 }
             }
 
             if (!readInt("Choose map mode (1 -> with obstacles, 2 -> no obstacles) ", &obstaclesMode) ||
                 (obstaclesMode != 1 && obstaclesMode != 2)) {
-                printf("Invalid map mode selected.\n");
+                printf("\033[31mInvalid map mode selected.\033[0m\n");
                 continue;
             }
 
@@ -258,11 +257,11 @@ int main(void) {
             if ((!readInt("Enter X length: ", &sizeX) ||
                 !readInt("Enter Y length: ", &sizeY)) ||
                 (sizeX < 2 || sizeY < 2)) {
-                printf("Invalid size input, world must be at least 2x2.\n");
+                printf("\033[31mInvalid size input, world must be at least 2x2.\033[0m\n");
                 continue;
             }
             if (mode == 2 && (sizeX > MAX_WORLD_X || sizeY > MAX_WORLD_Y)) {
-                printf("Invalid size input, cannot be bigger than %dx%d.\n", MAX_WORLD_X, MAX_WORLD_Y);
+                printf("\033[31mInvalid size input, cannot be bigger than %dx%d.\033[0m\n", MAX_WORLD_X, MAX_WORLD_Y);
                 continue;
             }
 
@@ -272,7 +271,7 @@ int main(void) {
             mapReq.sizeY = sizeY;
 
             if (ipc_client_send(&cli, (char*)&mapReq, sizeof(MapRequest)) <= 0) {
-                printf("Send failed (map).\n");
+                printf("\033[31mSend failed (map).\033[0m\n");
                 ipc_client_close(&cli);
                 return 1;
             }
@@ -284,15 +283,15 @@ int main(void) {
                     printf("\nEnter starting position...\n");
                     if (!readInt("Enter starting X: ", &x) ||
                         !readInt("Enter starting Y: ", &y)) {
-                        printf("Invalid position input.\n");
+                        printf("\033[31mInvalid position input.\033[0m\n");
                         continue;
                     }
                     if (x == 0 && y == 0) {
-                        printf("Starting position can't be [0, 0].\n");
+                        printf("\033[31mStarting position cannot be [0, 0].\033[0m\n");
                         continue;
                     }
                     if (x >= sizeX || y >= sizeY) {
-                        printf("Starting position can't be outside the world.\n");
+                        printf("\033[31mStarting position cannot be outside the world.\033[0m\n");
                         continue;
                     }
 
@@ -301,7 +300,7 @@ int main(void) {
                     startReq.startY = y;
 
                     if (ipc_client_send(&cli, (char*)&startReq, sizeof(StartPositionRequest)) <= 0) {
-                        printf("Send failed (starting position).\n");
+                        printf("\033[31mSend failed (starting position).\033[0m\n");
                         ipc_client_close(&cli);
                         return 1;
                     }
@@ -310,7 +309,7 @@ int main(void) {
                     StartPositionResult st;
                     const int r = ipc_client_recv(&cli, (char*)&st, sizeX * sizeY * sizeof(StartPositionResult));
                     if (r <= 0) {
-                        printf("Receive failed (starting position result).\n");
+                        printf("\033[31mReceive failed (starting position result).\033[0m\n");
                         ipc_client_close(&cli);
                         return 1;
                     }
@@ -318,7 +317,7 @@ int main(void) {
                     printf("Client received starting position result.\n");
 
                     if (st.notOk) {
-                        printf("Incorrect starting position.\n");
+                        printf("\033[31mIncorrect starting position.\033[0m\n");
                     } else {
                         printf("Starting position set to [%d, %d].\n", x, y);
                         break;
@@ -331,29 +330,29 @@ int main(void) {
                 !readDouble("Enter prob down: ", &down, up, 3) ||
                 !readDouble("Enter prob left: ", &left, (up + down), 2) ||
                 !readDouble("Enter prob right: ", &right, (up + down + left), 1)) {
-                printf("Invalid probability input.\n");
+                printf("\033[31mInvalid probability input.\033[0m\n");
                 continue;
             }
 
             const double sum = fabs(up + down + left + right);
             if (sum < 0.999 || sum > 1.001) { // lebo sucet double nikdy nie je presne 1
-                printf("Probabilities must be >= 0 and sum to 1.\n");
+                printf("\033[31mProbabilities must be >= 0 and sum to 1.\033[0m\n");
                 continue;
             }
             printf("\nDirection probabilities set to {up: %lf, down: %lf, left: %lf, right: %lf}.\n\n", up, down, left, right);
 
             if (!readInt("Enter max steps K: ", &K)) {
-                printf("K must be >= 0.\n");
+                printf("\033[31mK must be >= 0.\033[0m\n");
                 continue;
             }
             if (mode == 2 && K > MAX_PATH - 1) {
-                printf("K must be <= %d.\n", MAX_PATH - 1);
+                printf("\033[31mK must be <= %d.\033[0m\n", MAX_PATH - 1);
                 continue;
             }
 
             if (mode == 1) {
                 if (!readInt("Enter replications count: ", &replications) || replications <= 0) {
-                    printf("Replications must be > 0.\n");
+                    printf("\033[31mReplications must be > 0.\033[0m\n");
                     continue;
                 }
             }
@@ -370,7 +369,7 @@ int main(void) {
         req.replications = replications;
 
         if (ipc_client_send(&cli, (char*)&req, sizeof(SimRequest)) <= 0) {
-            printf("Send failed (simulation).\n");
+            printf("\033[31mSend failed (simulation).\033[0m\n");
             ipc_client_close(&cli);
             return 1;
         }
@@ -381,7 +380,7 @@ int main(void) {
 
             const int r = ipc_client_recv(&cli, (char*)&res, sizeX * sizeY * sizeof(WalkResult));
             if (r <= 0) {
-                printf("Receive failed (simulation result).\n");
+                printf("\033[31mReceive failed (simulation result).\033[0m\n");
                 ipc_client_close(&cli);
                 return 1;
             }
@@ -394,7 +393,7 @@ int main(void) {
 
             const int r = ipc_client_recv(&cli, (char*)&res, sizeof(WalkPathResult));
             if (r <= 0) {
-                printf("Receive failed (simulation result).\n");
+                printf("\033[31mReceive failed (simulation result).\033[0m\n");
                 ipc_client_close(&cli);
                 return 1;
             }
