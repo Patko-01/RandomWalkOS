@@ -3,15 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 
-//TODO: dorob prekazky
-
-World createWorld(const int sizeX, const int sizeY, const int startX, const int startY) {
+World createWorld(const int sizeX, const int sizeY) {
     World w;
 
     w.sizeX = sizeX;
     w.sizeY = sizeY;
-    w.startX = startX;
-    w.startY = startY;
 
     w.worldBuffer = malloc(sizeX * sizeY * sizeof(char));
     memset(w.worldBuffer, '.', sizeX * sizeY);
@@ -27,32 +23,60 @@ World createWorld(const int sizeX, const int sizeY, const int startX, const int 
     return w;
 }
 
-int isSafeToStart(const World world, const int x, const int y) {
+int isSafeToStart(const World *world, const int x, const int y) {
     if (x == 0 && y == 0) {
         return 0;
     }
-    if (WORLD_AT(&world, x, y) == '#') {
+    if (WORLD_AT(world, x, y) == '#') {
         return 0;
     }
     return 1;
 }
 
-void placeObstacles(const World *world) {
-    int randX = (rand() % world->sizeX);
-    int randY = (rand() % world->sizeY);
+void placeObstacle(const World *world, const int x, const int y) {
+    const double randP = (double)rand() / (double)RAND_MAX;
+    const double probObstacle = 0.65;
 
-    while ((randX == 0 && randY == 0) || (randX == world->startX && randY == world->startY)) {
-        randX = (rand() % world->sizeX);
-        randY = (rand() % world->sizeY);
+    if (randP < probObstacle) {
+        WORLD_AT(world, x, y) = '#';
     }
-
-    WORLD_AT(world, randX, randY) = '#';
 }
 
-void destroyWorld(World *w) {
-    free(w->worldBuffer);
-    w->worldBuffer = NULL;
-    w->sizeX = 0;
-    w->sizeY = 0;
+void placeObstacles(const World *world) {
+    const int maxDiagLength = world->sizeX < world->sizeY ? world->sizeX : world->sizeY;
+
+    for (int n = 0 ; n < maxDiagLength; ++n) {
+        int numOfChecked2 = 0;
+        int numOfChecked3 = 0;
+
+        for (int y = 0; y < world->sizeY; ++y) {
+            for (int x = 0; x < world->sizeX; ++x) {
+                if ((x == 0 && y == 0) || (x == 1 && y == 1)) { // okolie [0, 0] musi byt prejazdne
+                    continue;
+                }
+
+                if (x + (2 * n) == y) {
+                    if (numOfChecked2 % 2 == 0) {
+                        placeObstacle(world, x, y);
+                    }
+                    ++numOfChecked2;
+                } else if (y + (2 * n) == x) {
+                    if (numOfChecked3 % 2 == 0) {
+                        placeObstacle(world, x, y);
+                    }
+                    ++numOfChecked3;
+                }
+            }
+        }
+    }
+}
+
+void destroyWorld(World *world) {
+    if (world->worldBuffer != NULL) {
+        free(world->worldBuffer);
+        world->worldBuffer = NULL;
+        world->sizeX = 0;
+        world->sizeY = 0;
+    }
 }
 

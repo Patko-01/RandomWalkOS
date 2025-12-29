@@ -21,7 +21,7 @@ typedef struct {
 typedef struct {
     double probSuccess;
     double avgStepCount;
-} WalkResults;
+} WalkResult;
 
 typedef struct {
     int pathLen;
@@ -34,7 +34,7 @@ typedef struct {
     char world[MAX_WORLD_X][MAX_WORLD_Y];
 } WalkPathResult;
 
-WalkResults randomWalkReplications(Position start, Probabilities pr, int K, int count, World world);
+WalkResult randomWalkReplications(Position start, Probabilities pr, int K, int count, World world);
 WalkPathResult randomWalkWithPath(Position start, Probabilities pr, int K, World world);
 
 #endif

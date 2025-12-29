@@ -48,8 +48,8 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
         result.path[result.pathLen++] = (Position){ currX, currY };
 
         // copy of the world
-        for (int x = 0; x < world.sizeX; ++x) {
-            for (int y = 0; y < world.sizeY; ++y) {
+        for (int y = 0; y < world.sizeY; ++y) {
+            for (int x = 0; x < world.sizeX; ++x) {
                 result.world[x][y] = WORLD_AT(&world, x, y);
             }
         }
@@ -145,7 +145,7 @@ void *randomWalkRoutine(void* arg) {
     return NULL;
 }
 
-WalkResults randomWalkReplications(const Position start, const Probabilities pr, const int K, const int count, const World world) {
+WalkResult randomWalkReplications(const Position start, const Probabilities pr, const int K, const int count, const World world) {
     pthread_t th[count];
 
     Shared sh;
@@ -158,7 +158,7 @@ WalkResults randomWalkReplications(const Position start, const Probabilities pr,
 
     pthread_mutex_init(&sh.mutex, NULL);
 
-    WalkResults result = {0, -1};
+    WalkResult result = {0, -1};
 
     for (int i = 0; i < count; ++i) {
         if (pthread_create(&th[i], NULL, randomWalkRoutine, (void*) &sh) != 0) {

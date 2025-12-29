@@ -6,15 +6,12 @@
 typedef struct {
     int sizeX;
     int sizeY;
-    int startX;
-    int startY;
-
     char* worldBuffer;
 } World;
 
-World createWorld(int sizeX, int sizeY, int startX, int startY);
-int isSafeToStart(World world, int x, int y);
+World createWorld(int sizeX, int sizeY);
+int isSafeToStart(const World *world, int x, int y);
 void placeObstacles(const World *world);
-void destroyWorld(World *w);
+void destroyWorld(World *world);
 
 #endif

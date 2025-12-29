@@ -15,7 +15,7 @@ int ipc_server_start(ipc_server* srv, const char* port) {
     srv->listen_sock = -1;
     srv->conn_sock = -1;
 
-    int listenSock = socket(AF_INET, SOCK_STREAM, 0);
+    const int listenSock = socket(AF_INET, SOCK_STREAM, 0);
     if (listenSock < 0) {
         printf("Socket failed.\n");
         return -1;
@@ -28,8 +28,7 @@ int ipc_server_start(ipc_server* srv, const char* port) {
         return -1;
     }
 
-    struct sockaddr_in sa;
-    memset(&sa, 0, sizeof(sa));
+    struct sockaddr_in sa = {0};
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = htonl(INADDR_LOOPBACK); // 127.0.0.1
     sa.sin_port = htons((unsigned short)atoi(port));

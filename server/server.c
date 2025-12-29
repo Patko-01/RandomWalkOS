@@ -9,8 +9,7 @@
 
 int main(void) {
     srand(time(NULL));
-
-    /*
+    /* testing
     Position pos;
     pos.x = 1;
     pos.y = 1;
@@ -22,9 +21,9 @@ int main(void) {
 
     const Position start = { 1, 1 };
 
-    World world = createWorld(2, 2, 1, 1);
+    World world = createWorld(2, 2);
     placeObstacles(&world);
-    const WalkResults res = randomWalkReplications(start, pr, 33, 3, world);
+    const WalkResult res = randomWalkReplications(start, pr, 33, 3, world);
 
     destroyWorld(&world);
 
@@ -46,7 +45,94 @@ int main(void) {
     printf("Client connected.\n");
 
     while (1) {
-        printf("\nWaiting for client request.\n");
+        EndRequest endReq;
+        const int er = ipc_server_recv(&srv, (char*)&endReq, sizeof(EndRequest));
+
+        if (er <= 0) {
+            printf("Receive failed (end).\n");
+            ipc_server_stop(&srv);
+            return 1;
+        }
+        if (endReq.end) {
+            printf("End request received.\n");
+            ipc_server_stop(&srv);
+            return 0;
+        }
+
+        printf("--------------------------------\n");
+        printf("Waiting for client mode request.\n");
+
+        ModeRequest modeReq;
+        const int mreq = ipc_server_recv(&srv, (char*)&modeReq, sizeof(ModeRequest));
+
+        if (mreq <= 0) {
+            printf("Receive failed (mode).\n");
+            ipc_server_stop(&srv);
+            return 1;
+        }
+        printf("Mode request received.\n");
+
+        printf("\nWaiting for client map request.\n");
+
+        MapRequest mapReq;
+        const int mr = ipc_server_recv(&srv, (char*)&mapReq, sizeof(MapRequest));
+
+        if (mr <= 0) {
+            printf("Receive failed (map).\n");
+            ipc_server_stop(&srv);
+            return 1;
+        }
+        printf("Map request received.\n");
+
+        World world = createWorld(mapReq.sizeX, mapReq.sizeY);
+        if (mapReq.obstaclesMode == 1) {
+            placeObstacles(&world);
+        }
+
+        StartPositionRequest startReq;
+        if (modeReq.mode == 2) {
+            while (1) {
+                printf("\nWaiting for client starting position request.\n");
+
+                const int sr = ipc_server_recv(&srv, (char*)&startReq, sizeof(StartPositionRequest));
+
+                if (sr <= 0) {
+                    printf("Receive failed (starting position).\n");
+                    ipc_server_stop(&srv);
+                    return 1;
+                }
+
+                printf("Starting position request received.\n");
+
+                if (isSafeToStart(&world, startReq.startX, startReq.startY)) {
+                    printf("Starting position is OK.\n");
+
+                    StartPositionResult pr;
+                    pr.notOk = 0;
+
+                    if (ipc_server_send(&srv, (char*)&pr, sizeof(StartPositionResult)) <= 0) {
+                        printf("Send failed (position request result).\n");
+                        ipc_server_stop(&srv);
+                        return 1;
+                    }
+                    break;
+                } else {
+                    printf("Starting position is not OK.\n");
+
+                    StartPositionResult pr;
+                    pr.notOk = 1;
+
+                    if (ipc_server_send(&srv, (char*)&pr, sizeof(StartPositionResult)) <= 0) {
+                        printf("Send failed (position request result).\n");
+                        ipc_server_stop(&srv);
+                        return 1;
+                    }
+                }
+            }
+        }
+
+        printf("\nWaiting for client simulation request.\n");
+
         SimRequest req;
         const int r = ipc_server_recv(&srv, (char*)&req, sizeof(SimRequest));
 
@@ -56,20 +142,20 @@ int main(void) {
             return 1;
         }
 
-        if (req.end == 1) {
-            printf("End request received.\n");
-            break;
-        } else {
-            printf("Request received.\n");
-        }
+        printf("Simulation request received.\n");
 
-        if (req.mode == 1) {
+        if (modeReq.mode == 1) {
             printf("Mode = summary\n");
-        } else if (req.mode == 2) {
+        } else if (modeReq.mode == 2) {
             printf("Mode = interactive\n");
         }
-        printf("World = %dx%d\n", req.sizeX, req.sizeY);
-        printf("K = %d, replications = %d\n", req.maxSteps, req.replications);
+        printf("World = %dx%d\n", mapReq.sizeX, mapReq.sizeY);
+
+        if (modeReq.mode == 1) {
+            printf("K = %d, replications = %d\n", req.maxSteps, req.replications);
+        } else if (modeReq.mode == 2) {
+            printf("K = %d\n", req.maxSteps);
+        }
 
         const Probabilities pr = {
             req.p_up,
@@ -77,43 +163,38 @@ int main(void) {
             req.p_left,
             req.p_right
         };
-        World world = createWorld(req.sizeX, req.sizeY, req.startX, req.startY);
-        placeObstacles(&world);
 
-        if (req.mode == 1) {
-            WalkResults res[req.sizeY][req.sizeX];
+        if (modeReq.mode == 1) {
+            WalkResult res[mapReq.sizeX][mapReq.sizeY];
 
-            memset(res, 0, req.sizeX * req.sizeY * sizeof(WalkResults));
+            memset(res, 0, mapReq.sizeX * mapReq.sizeY * sizeof(WalkResult));
 
-            for (int y = 0; y < req.sizeY; y++) {
-                for (int x = 0; x < req.sizeX; x++) {
-                    if (isSafeToStart(world, x, y)) {
+            for (int y = 0; y < mapReq.sizeY; y++) {
+                for (int x = 0; x < mapReq.sizeX; x++) {
+                    if (isSafeToStart(&world, x, y)) {
                         const Position start = { x, y };
-                        res[y][x] = randomWalkReplications(start, pr, req.maxSteps, req.replications, world);
+                        res[x][y] = randomWalkReplications(start, pr, req.maxSteps, req.replications, world);
                     }
                 }
             }
 
-            if (ipc_server_send(&srv, (char*)&res, req.sizeX * req.sizeY * sizeof(WalkResults)) <= 0) {
-                printf("Send failed.\n");
+            if (ipc_server_send(&srv, (char*)&res, mapReq.sizeX * mapReq.sizeY * sizeof(WalkResult)) <= 0) {
+                printf("Send failed (simulation result).\n");
                 ipc_server_stop(&srv);
                 return 1;
             }
-        } else if (req.mode == 2) {
-            const Position start = { req.startX, req.startY };
+        } else if (modeReq.mode == 2) {
+            const Position start = { startReq.startX, startReq.startY };
             WalkPathResult res = randomWalkWithPath(start, pr, req.maxSteps, world);
 
             if (ipc_server_send(&srv, (char*)&res, sizeof(WalkPathResult)) <= 0) {
-                printf("Send failed.\n");
+                printf("Send failed (simulation result).\n");
                 ipc_server_stop(&srv);
                 return 1;
             }
         }
 
         destroyWorld(&world);
-        printf("Server replied with simulation result.\n");
+        printf("\nServer replied with simulation result.\n");
     }
-
-    ipc_server_stop(&srv);
-    return 0;
 }
