@@ -1,19 +1,27 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
-typedef struct {
-    double p_up;
-    double p_down;
-    double p_left;
-    double p_right;
+typedef enum {
+    MSG_EXIT,
+    MSG_MODE,
+    MSG_MAP,
+    MSG_START_POS,
+    MSG_SIMULATION
+} MessageType;
 
-    int maxSteps;     // K
-    int replications;
-} SimRequest;
+typedef struct {
+    MessageType type;
+} MessageHeader;
 
 typedef struct {
     int mode; // 1 = summary, 2 = interactive
 } ModeRequest;
+
+typedef struct {
+    int obstaclesMode;
+    int sizeX;
+    int sizeY;
+} MapRequest;
 
 typedef struct {
     int startX;
@@ -25,13 +33,13 @@ typedef struct {
 } StartPositionResult;
 
 typedef struct {
-    int obstaclesMode;
-    int sizeX;
-    int sizeY;
-} MapRequest;
+    double p_up;
+    double p_down;
+    double p_left;
+    double p_right;
 
-typedef struct {
-    int end;
-} EndRequest;
+    int maxSteps;     // K
+    int replications;
+} SimRequest;
 
 #endif

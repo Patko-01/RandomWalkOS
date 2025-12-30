@@ -24,6 +24,10 @@ int readInt(const char* prompt, int* out) {
         return 0; // input error
     }
 
+    if ((input[0] == 'N' || input[0] == 'n') && input[1] == '\n') {
+        return -1;
+    }
+
     const long value = strtol(input, NULL, 10);
     if (value < 0) {
         return 0;
@@ -40,9 +44,15 @@ int readDouble(const char* prompt, double* out, const double probSum, const int 
     if (!fgets(input, INPUT_BUFFER, stdin)) {
         return 0; // input error
     }
+
+    if ((input[0] == 'N' || input[0] == 'n') && input[1] == '\n') {
+        return -1;
+    }
+
     if (strlen(input) > 0 && input[strlen(input) - 1] == '\n') {
         input[strlen(input) - 1] = '\0';
     }
+
     if (strchr(input, '*') != NULL) {
         *out = (1 - probSum) / divider;
         return 1;
@@ -174,6 +184,21 @@ void drawResultMap(const int sizeX, const int sizeY, const WalkResult results[si
     printf("Highest average step count: %.4f\n", highestAvgStepCount);
 }
 
+int client_exit(ipc_client cli) {
+    MessageHeader h;
+    h.type = MSG_EXIT;
+
+    if (ipc_client_send(&cli, (char*)&h, sizeof(MessageHeader)) <= 0) {
+        printf("\033[31mSend failed (header).\033[0m\n");
+        ipc_client_close(&cli);
+        return 1;
+    }
+
+    printf("\nClient sent exit request.\n");
+    ipc_client_close(&cli);
+    return 0;
+}
+
 int main(void) {
     ipc_client cli;
     if (ipc_client_connect(&cli, IPC_PORT) != 0) {
@@ -185,49 +210,38 @@ int main(void) {
     while (1) {
         int x, y, K, replications, sizeX, sizeY, mode, printMode, obstaclesMode;
         double up, down, left, right;
+        MessageHeader h;
+
+        printf(
+        "██████╗░░█████╗░███╗░░██╗██████╗░░█████╗░███╗░░░███╗░░░██╗░░░░░░░██╗░█████╗░██╗░░░░░██╗░░██╗░░░█████╗░░██████╗\n"
+              "██╔══██╗██╔══██╗████╗░██║██╔══██╗██╔══██╗████╗░████║░░░██║░░██╗░░██║██╔══██╗██║░░░░░██║░██╔╝░░██╔══██╗██╔════╝\n"
+              "██████╔╝███████║██╔██╗██║██║░░██║██║░░██║██╔████╔██║░░░╚██╗████╗██╔╝███████║██║░░░░░█████═╝░░░██║░░██║╚█████╗░\n"
+              "██╔══██╗██╔══██║██║╚████║██║░░██║██║░░██║██║╚██╔╝██║░░░░████╔═████║░██╔══██║██║░░░░░██╔═██╗░░░██║░░██║░╚═══██╗\n"
+              "██║░░██║██║░░██║██║░╚███║██████╔╝╚█████╔╝██║░╚═╝░██║░░░░╚██╔╝░╚██╔╝░██║░░██║███████╗██║░╚██╗░░╚█████╔╝██████╔╝\n"
+              "╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░░╚════╝░╚═╝░░░░░╚═╝░░░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░░░╚════╝░╚═════╝░\n"
+        );
+
+        printf("\033[90mYou can press N to quit at any time...\033[0m\n\n");
 
         while (1) {
-            printf("\nPress Y to continue or N to quit. ");
-
-            char ch;
-            if (scanf("%c", &ch) != 1) {
-                printf("\033[31mError while reading user input.\033[0m\n");
-                clearInput();
-                continue;
-            }
-
-            if (ch == 'N' || ch == 'n') {
-                EndRequest req;
-                req.end = 1;
-
-                if (ipc_client_send(&cli, (char*)&req, sizeof(EndRequest)) <= 0) {
-                    printf("\033[31mSend failed (exit).\033[0m\n");
-                    ipc_client_close(&cli);
-                    return 1;
+            while (1) {
+                const int res = readInt("Choose simulation mode (1 -> summary, 2 -> interactive) ", &mode);
+                if (res == -1) {
+                    return client_exit(cli);
                 }
 
-                printf("\nClient sent cancellation.\n");
-                ipc_client_close(&cli);
-                return 0;
-            } else if (ch != 'Y' && ch != 'y') {
-                printf("\033[31mIncorrect user input.\033[0m\n");
-                clearInput();
-                continue;
+                if (!res || (mode != 1 && mode != 2)) {
+                    printf("\033[31mInvalid simulation mode selected.\033[0m\n");
+                    continue;
+                }
+                break;
             }
-            EndRequest req;
-            req.end = 0;
 
-            if (ipc_client_send(&cli, (char*)&req, sizeof(EndRequest)) <= 0) {
-                printf("\033[31mSend failed (exit).\033[0m\n");
+            h.type = MSG_MODE;
+            if (ipc_client_send(&cli, (char*)&h, sizeof(MessageHeader)) <= 0) {
+                printf("\033[31mSend failed (header).\033[0m\n");
                 ipc_client_close(&cli);
                 return 1;
-            }
-            clearInput();
-
-            if (!readInt("Choose simulation mode (1 -> summary, 2 -> interactive) ", &mode) ||
-                (mode != 1 && mode != 2)) {
-                printf("\033[31mInvalid simulation mode selected.\033[0m\n");
-                continue;
             }
 
             ModeRequest modeReq;
@@ -240,29 +254,60 @@ int main(void) {
             printf("\nClient sent mode request.\n\n");
 
             if (mode == 1) {
-                if (!readInt("Choose printing mode (1 -> probabilities, 2 -> steps count) ", &printMode) ||
-                    (printMode != 1 && printMode != 2)) {
-                    printf("\033[31mInvalid printing mode selected.\033[0m\n");
-                    continue;
+                while (1) {
+                    const int res = readInt("Choose printing mode (1 -> probabilities, 2 -> steps count) ", &printMode);
+                    if (res == -1) {
+                        return client_exit(cli);
+                    }
+
+                    if (!res || (printMode != 1 && printMode != 2)) {
+                        printf("\033[31mInvalid printing mode selected.\033[0m\n");
+                        continue;
+                    }
+                    break;
                 }
             }
 
-            if (!readInt("Choose map mode (1 -> with obstacles, 2 -> no obstacles) ", &obstaclesMode) ||
-                (obstaclesMode != 1 && obstaclesMode != 2)) {
-                printf("\033[31mInvalid map mode selected.\033[0m\n");
-                continue;
+            while (1) {
+                const int res = readInt("Choose map mode (1 -> with obstacles, 2 -> no obstacles) ", &obstaclesMode);
+                if (res == -1) {
+                    return client_exit(cli);
+                }
+
+                if (!res || (obstaclesMode != 1 && obstaclesMode != 2)) {
+                    printf("\033[31mInvalid map mode selected.\033[0m\n");
+                    continue;
+                }
+                break;
             }
 
-            printf("\nEnter world size...\n");
-            if ((!readInt("Enter X length: ", &sizeX) ||
-                !readInt("Enter Y length: ", &sizeY)) ||
-                (sizeX < 2 || sizeY < 2)) {
-                printf("\033[31mInvalid size input, world must be at least 2x2.\033[0m\n");
-                continue;
+            while (1) {
+                printf("\nEnter world size...\n");
+                const int res1 = readInt("Enter X length: ", &sizeX);
+                if (res1 == -1) {
+                    return client_exit(cli);
+                }
+                const int res2 = readInt("Enter Y length: ", &sizeY);
+                if (res2 == -1) {
+                    return client_exit(cli);
+                }
+
+                if ((!res1 || !res2) || (sizeX < 2 || sizeY < 2)) {
+                    printf("\033[31mInvalid size input, world must be at least 2x2.\033[0m\n");
+                    continue;
+                }
+                if (mode == 2 && (sizeX > MAX_WORLD_X || sizeY > MAX_WORLD_Y)) {
+                    printf("\033[31mInvalid size input, cannot be bigger than %dx%d.\033[0m\n", MAX_WORLD_X, MAX_WORLD_Y);
+                    continue;
+                }
+                break;
             }
-            if (mode == 2 && (sizeX > MAX_WORLD_X || sizeY > MAX_WORLD_Y)) {
-                printf("\033[31mInvalid size input, cannot be bigger than %dx%d.\033[0m\n", MAX_WORLD_X, MAX_WORLD_Y);
-                continue;
+
+            h.type = MSG_MAP;
+            if (ipc_client_send(&cli, (char*)&h, sizeof(MessageHeader)) <= 0) {
+                printf("\033[31mSend failed (header).\033[0m\n");
+                ipc_client_close(&cli);
+                return 1;
             }
 
             MapRequest mapReq;
@@ -281,8 +326,16 @@ int main(void) {
             if (mode == 2) {
                 while (1) {
                     printf("\nEnter starting position...\n");
-                    if (!readInt("Enter starting X: ", &x) ||
-                        !readInt("Enter starting Y: ", &y)) {
+                    const int res1 = readInt("Enter starting X: ", &x);
+                    if (res1 == -1) {
+                        return client_exit(cli);
+                    }
+                    const int res2 = readInt("Enter starting Y: ", &y);
+                    if (res2 == -1) {
+                        return client_exit(cli);
+                    }
+
+                    if (!res1 || !res2) {
                         printf("\033[31mInvalid position input.\033[0m\n");
                         continue;
                     }
@@ -293,6 +346,13 @@ int main(void) {
                     if (x >= sizeX || y >= sizeY) {
                         printf("\033[31mStarting position cannot be outside the world.\033[0m\n");
                         continue;
+                    }
+
+                    h.type = MSG_START_POS;
+                    if (ipc_client_send(&cli, (char*)&h, sizeof(MessageHeader)) <= 0) {
+                        printf("\033[31mSend failed (header).\033[0m\n");
+                        ipc_client_close(&cli);
+                        return 1;
                     }
 
                     StartPositionRequest startReq;
@@ -325,35 +385,69 @@ int main(void) {
                 }
             }
 
-            printf("\nEnter direction probabilities...\n");
-            if (!readDouble("Enter prob up: ", &up, 0, 4) ||
-                !readDouble("Enter prob down: ", &down, up, 3) ||
-                !readDouble("Enter prob left: ", &left, (up + down), 2) ||
-                !readDouble("Enter prob right: ", &right, (up + down + left), 1)) {
-                printf("\033[31mInvalid probability input.\033[0m\n");
-                continue;
-            }
+            while (1) {
+                printf("\nEnter direction probabilities...\n");
+                const int res1 = readDouble("Enter prob up: ", &up, 0, 4);
+                if (res1 == -1) {
+                    return client_exit(cli);
+                }
+                const int res2 = readDouble("Enter prob down: ", &down, up, 3);
+                if (res2 == -1) {
+                    return client_exit(cli);
+                }
+                const int res3 = readDouble("Enter prob left: ", &left, (up + down), 2);
+                if (res3 == -1) {
+                    return client_exit(cli);
+                }
+                const int res4 = readDouble("Enter prob right: ", &right, (up + down + left), 1);
+                if (res4 == -1) {
+                    return client_exit(cli);
+                }
 
-            const double sum = fabs(up + down + left + right);
-            if (sum < 0.999 || sum > 1.001) { // lebo sucet double nikdy nie je presne 1
-                printf("\033[31mProbabilities must be >= 0 and sum to 1.\033[0m\n");
-                continue;
+                if (!res1 || !res2 || !res3 || !res4) {
+                    printf("\033[31mInvalid probability input.\033[0m\n");
+                    continue;
+                }
+
+                const double sum = fabs(up + down + left + right);
+                if (sum < 0.999 || sum > 1.001) { // lebo sucet double nikdy nie je presne 1
+                    printf("\033[31mProbabilities must be >= 0 and sum to 1.\033[0m\n");
+                    continue;
+                }
+                break;
             }
             printf("\nDirection probabilities set to {up: %lf, down: %lf, left: %lf, right: %lf}.\n\n", up, down, left, right);
 
-            if (!readInt("Enter max steps K: ", &K)) {
-                printf("\033[31mK must be >= 0.\033[0m\n");
-                continue;
-            }
-            if (mode == 2 && K > MAX_PATH - 1) {
-                printf("\033[31mK must be <= %d.\033[0m\n", MAX_PATH - 1);
-                continue;
+            while (1) {
+                const int res = readInt("Enter max steps K: ", &K);
+                if (res == -1) {
+                    return client_exit(cli);
+                }
+
+                if (!res || K <= 0) {
+                    printf("\033[31mK must be > 0.\033[0m\n");
+                    continue;
+                }
+                if (mode == 2 && K > MAX_PATH - 1) {
+                    printf("\033[31mK must be <= %d.\033[0m\n", MAX_PATH - 1);
+                    continue;
+                }
+                break;
             }
 
+            replications = 1; // iba kvoli prekladacu
             if (mode == 1) {
-                if (!readInt("Enter replications count: ", &replications) || replications <= 0) {
-                    printf("\033[31mReplications must be > 0.\033[0m\n");
-                    continue;
+                while (1) {
+                    const int res = readInt("Enter replications count: ", &replications);
+                    if (res == -1) {
+                        return client_exit(cli);
+                    }
+
+                    if (!res || replications <= 0) {
+                        printf("\033[31mReplications must be > 0.\033[0m\n");
+                        continue;
+                    }
+                    break;
                 }
             }
 
@@ -367,6 +461,13 @@ int main(void) {
         req.p_right = right;
         req.maxSteps = K;
         req.replications = replications;
+
+        h.type = MSG_SIMULATION;
+        if (ipc_client_send(&cli, (char*)&h, sizeof(MessageHeader)) <= 0) {
+            printf("\033[31mSend failed (header).\033[0m\n");
+            ipc_client_close(&cli);
+            return 1;
+        }
 
         if (ipc_client_send(&cli, (char*)&req, sizeof(SimRequest)) <= 0) {
             printf("\033[31mSend failed (simulation).\033[0m\n");

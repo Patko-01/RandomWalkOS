@@ -34,7 +34,7 @@ typedef struct {
     char world[MAX_WORLD_X][MAX_WORLD_Y];
 } WalkPathResult;
 
-WalkResult randomWalkReplications(Position start, Probabilities pr, int K, int count, World world);
-WalkPathResult randomWalkWithPath(Position start, Probabilities pr, int K, World world);
+WalkResult randomWalkReplications(Position start, Probabilities pr, int K, int count, World *world);
+WalkPathResult randomWalkWithPath(Position start, Probabilities pr, int K, const World *world);
 
 #endif

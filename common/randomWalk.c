@@ -11,7 +11,7 @@ typedef struct {
 
     Position start;
     Probabilities pr;
-    World world;
+    World *world;
 
     pthread_mutex_t mutex;
 } Shared;
@@ -30,7 +30,7 @@ int nextStep(const Probabilities pr, unsigned int *seed) {
     }
 }
 
-WalkPathResult randomWalk(const Position start, const Probabilities pr, const int K, const World world, const int withPath) {
+WalkPathResult randomWalk(const Position start, const Probabilities pr, const int K, const World *world, const int withPath) {
     unsigned int seed = (unsigned int)pthread_self();
 
     WalkPathResult result;
@@ -39,8 +39,8 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
     int currY = start.y;
 
     result.pathLen = 0;
-    result.worldX = world.sizeX;
-    result.worldY = world.sizeY;
+    result.worldX = world->sizeX;
+    result.worldY = world->sizeY;
 
     memset(result.path, 0, sizeof(result.path));
 
@@ -48,9 +48,9 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
         result.path[result.pathLen++] = (Position){ currX, currY };
 
         // copy of the world
-        for (int y = 0; y < world.sizeY; ++y) {
-            for (int x = 0; x < world.sizeX; ++x) {
-                result.world[x][y] = WORLD_AT(&world, x, y);
+        for (int y = 0; y < world->sizeY; ++y) {
+            for (int x = 0; x < world->sizeX; ++x) {
+                result.world[x][y] = WORLD_AT(world, x, y);
             }
         }
     }
@@ -100,18 +100,18 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
             }
 
             if (currX < 0) {
-                currX = world.sizeX - 1;
-            } else if (currX >= world.sizeX) {
+                currX = world->sizeX - 1;
+            } else if (currX >= world->sizeX) {
                 currX = 0;
             }
 
             if (currY < 0) {
-                currY = world.sizeY - 1;
-            } else if (currY >= world.sizeY) {
+                currY = world->sizeY - 1;
+            } else if (currY >= world->sizeY) {
                 currY = 0;
             }
 
-            if (WORLD_AT(&world, currX, currY) == '#') {
+            if (WORLD_AT(world, currX, currY) == '#') {
                 usedDirections[index++] = direction;
                 currX = oldCurrX;
                 currY = oldCurrY;
@@ -145,7 +145,7 @@ void *randomWalkRoutine(void* arg) {
     return NULL;
 }
 
-WalkResult randomWalkReplications(const Position start, const Probabilities pr, const int K, const int count, const World world) {
+WalkResult randomWalkReplications(const Position start, const Probabilities pr, const int K, const int count, World *world) {
     pthread_t th[count];
 
     Shared sh;
@@ -183,6 +183,6 @@ WalkResult randomWalkReplications(const Position start, const Probabilities pr, 
     return result;
 }
 
-WalkPathResult randomWalkWithPath(const Position start, const Probabilities pr, const int K, const World world) {
+WalkPathResult randomWalkWithPath(const Position start, const Probabilities pr, const int K, const World *world) {
     return randomWalk(start, pr, K, world, 1);
 }

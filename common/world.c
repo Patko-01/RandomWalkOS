@@ -72,11 +72,16 @@ void placeObstacles(const World *world) {
 }
 
 void destroyWorld(World *world) {
-    if (world->worldBuffer != NULL) {
-        free(world->worldBuffer);
-        world->worldBuffer = NULL;
-        world->sizeX = 0;
-        world->sizeY = 0;
+    if (world == NULL) {
+        return;
     }
+    if (world->worldBuffer == NULL) {
+        return;
+    }
+
+    free(world->worldBuffer);
+    world->worldBuffer = NULL;
+    world->sizeX = 0;
+    world->sizeY = 0;
 }
 
