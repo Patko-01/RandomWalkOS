@@ -10,12 +10,6 @@
 
 #define INPUT_BUFFER 64
 
-// tento kód mám od AI
-void clearInput(void) {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF) {}
-}
-
 int readInt(const char* prompt, int* out) {
     char input[INPUT_BUFFER];
     printf("%s", prompt);
