@@ -55,7 +55,7 @@ int main(void) {
                 return 0;
 
             case MSG_MODE:
-                printf("Waiting for client mode request...\n");
+                printf("\nWaiting for client mode request...\n");
 
                 const int modeR = ipc_server_recv(&srv, (char*)&modeReq, sizeof(ModeRequest));
 

@@ -35,6 +35,7 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
 
     WalkPathResult result;
     result.success = 0;
+    result.stuck = 0;
     int currX = start.x;
     int currY = start.y;
 
@@ -56,11 +57,6 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
     }
 
     for (int i = 0; i < K; ++i) {
-        if (currX == 0 && currY == 0) {
-            result.success = 1;
-            return result;
-        }
-
         int usedDirections[4];
         memset(usedDirections, -1, sizeof(usedDirections));
 
@@ -68,9 +64,16 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
 
         while (1) {
             int direction;
+            int numOfGenerated = 0;
 
+            // sluzi na to, aby sa vzdy testoval novy vygenerovany smer.
             while (1) {
+                if (numOfGenerated >= 4) { // zabranenie nekonecneho cyklu.
+                    result.stuck = 1;
+                    return result;
+                }
                 direction = nextStep(pr, &seed);
+                ++numOfGenerated;
 
                 int found = 0;
                 for (int j = 0; j <= index; ++j) {
@@ -125,6 +128,11 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
         }
 
         ++result.pathLen;
+
+        if (currX == 0 && currY == 0) {
+            result.success = 1;
+            return result;
+        }
     }
 
     return result;

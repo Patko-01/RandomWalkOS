@@ -29,6 +29,7 @@ typedef struct {
     int worldY;
 
     int success;
+    int stuck;
 
     Position path[MAX_PATH];
     char world[MAX_WORLD_X][MAX_WORLD_Y];

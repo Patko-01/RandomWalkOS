@@ -119,7 +119,9 @@ void drawPath(const WalkPathResult result) {
     }
 
     if (result.success) {
-        printf("Walker successfully walked to (0, 0).\n");
+        printf("Walker successfully walked to (0, 0).\n\n");
+    } else if (result.stuck) {
+        printf("Walker got stuck.\n\n");
     }
 }
 
@@ -175,7 +177,7 @@ void drawResultMap(const int sizeX, const int sizeY, const WalkResult results[si
         printf("\n");
     }
 
-    printf("Highest average step count: %.4f\n", highestAvgStepCount);
+    printf("Highest average step count: %.4f\n\n", highestAvgStepCount);
 }
 
 int client_exit(ipc_client cli) {
