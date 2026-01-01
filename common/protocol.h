@@ -1,5 +1,6 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
+#include "randomWalk.h" // kvoli makram
 
 typedef enum {
     MSG_EXIT,
@@ -31,6 +32,10 @@ typedef struct {
 typedef struct {
     int notOk;
 } StartPositionResult;
+
+typedef struct {
+    char world[MAX_WORLD_X][MAX_WORLD_Y];
+} WorldRequest;
 
 typedef struct {
     double p_up;

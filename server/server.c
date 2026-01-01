@@ -65,7 +65,7 @@ int main(void) {
                     return 1;
                 }
                 printf("Mode request received.\n");
-                break;
+            break;
 
             case MSG_MAP:
                 printf("\nWaiting for client map request...\n");
@@ -84,55 +84,66 @@ int main(void) {
                     placeObstacles(&world);
                 }
                 worldExists = 1;
-                break;
+
+                WorldRequest wReq;
+                for (int y = 0; y < world.sizeY; ++y) {
+                    for (int x = 0; x < world.sizeX; ++x) {
+                        wReq.world[x][y] = WORLD_AT(&world, x, y);
+                    }
+                }
+
+                if (ipc_server_send(&srv, (char*)&wReq, sizeof(WorldRequest)) <= 0) {
+                    printf("\033[31mSend failed (world generation result).\033[0m\n");
+                    destroyWorld(&world);
+                    ipc_server_stop(&srv);
+                    return 1;
+                }
+            break;
 
             case MSG_START_POS:
-                while (1) {
-                    printf("\nWaiting for client starting position request...\n");
+                printf("\nWaiting for client starting position request...\n");
 
-                    const int sr = ipc_server_recv(&srv, (char*)&startReq, sizeof(StartPositionRequest));
+                const int sr = ipc_server_recv(&srv, (char*)&startReq, sizeof(StartPositionRequest));
 
-                    if (sr <= 0) {
-                        printf("\033[31mReceive failed (starting position).\033[0m\n");
+                if (sr <= 0) {
+                    printf("\033[31mReceive failed (starting position).\033[0m\n");
+                    destroyWorld(&world);
+                    ipc_server_stop(&srv);
+                    return 1;
+                }
+
+                printf("Starting position request received.\n");
+
+                if (!worldExists) { // teoreticky toto nikdy nenastane v tejto situacii
+                    world = createWorld(2, 2);
+                }
+
+                if (isSafeToStart(&world, startReq.startX, startReq.startY)) {
+                    printf("Starting position is OK.\n");
+
+                    StartPositionResult pr;
+                    pr.notOk = 0;
+
+                    if (ipc_server_send(&srv, (char*)&pr, sizeof(StartPositionResult)) <= 0) {
+                        printf("\033[31mSend failed (position request result).\033[0m\n");
                         destroyWorld(&world);
                         ipc_server_stop(&srv);
                         return 1;
                     }
+                } else {
+                    printf("Starting position is not OK.\n");
 
-                    printf("Starting position request received.\n");
+                    StartPositionResult pr;
+                    pr.notOk = 1;
 
-                    if (!worldExists) { // teoreticky toto nikdy nenastane v tejto situacii
-                        world = createWorld(2, 2);
-                    }
-
-                    if (isSafeToStart(&world, startReq.startX, startReq.startY)) {
-                        printf("Starting position is OK.\n");
-
-                        StartPositionResult pr;
-                        pr.notOk = 0;
-
-                        if (ipc_server_send(&srv, (char*)&pr, sizeof(StartPositionResult)) <= 0) {
-                            printf("\033[31mReceive failed (position request result).\033[0m\n");
-                            destroyWorld(&world);
-                            ipc_server_stop(&srv);
-                            return 1;
-                        }
-                        break;
-                    } else {
-                        printf("Starting position is not OK.\n");
-
-                        StartPositionResult pr;
-                        pr.notOk = 1;
-
-                        if (ipc_server_send(&srv, (char*)&pr, sizeof(StartPositionResult)) <= 0) {
-                            printf("\033[31mReceive failed (position request result).\033[0m\n");
-                            destroyWorld(&world);
-                            ipc_server_stop(&srv);
-                            return 1;
-                        }
+                    if (ipc_server_send(&srv, (char*)&pr, sizeof(StartPositionResult)) <= 0) {
+                        printf("\033[31mSend failed (position request result).\033[0m\n");
+                        destroyWorld(&world);
+                        ipc_server_stop(&srv);
+                        return 1;
                     }
                 }
-                break;
+            break;
 
             case MSG_SIMULATION:
                 printf("\nWaiting for client simulation request...\n");
@@ -206,7 +217,7 @@ int main(void) {
 
                 destroyWorld(&world);
                 printf("\nServer replied with simulation result.\n");
-                break;
+            break;
         }
     }
 }

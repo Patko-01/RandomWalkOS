@@ -180,7 +180,7 @@ void drawResultMap(const int sizeX, const int sizeY, const WalkResult results[si
     printf("Highest average step count: %.4f\n\n", highestAvgStepCount);
 }
 
-int client_exit(ipc_client cli) {
+int clientExit(ipc_client cli) {
     MessageHeader h;
     h.type = MSG_EXIT;
 
@@ -223,7 +223,7 @@ int main(void) {
             while (1) {
                 const int res = readInt("Choose simulation mode (1 -> summary, 2 -> interactive) ", &mode);
                 if (res == -1) {
-                    return client_exit(cli);
+                    return clientExit(cli);
                 }
 
                 if (!res || (mode != 1 && mode != 2)) {
@@ -253,7 +253,7 @@ int main(void) {
                 while (1) {
                     const int res = readInt("Choose printing mode (1 -> probabilities, 2 -> steps count) ", &printMode);
                     if (res == -1) {
-                        return client_exit(cli);
+                        return clientExit(cli);
                     }
 
                     if (!res || (printMode != 1 && printMode != 2)) {
@@ -267,7 +267,7 @@ int main(void) {
             while (1) {
                 const int res = readInt("Choose map mode (1 -> with obstacles, 2 -> no obstacles) ", &obstaclesMode);
                 if (res == -1) {
-                    return client_exit(cli);
+                    return clientExit(cli);
                 }
 
                 if (!res || (obstaclesMode != 1 && obstaclesMode != 2)) {
@@ -281,11 +281,11 @@ int main(void) {
                 printf("\nEnter world size...\n");
                 const int res1 = readInt("Enter X length: ", &sizeX);
                 if (res1 == -1) {
-                    return client_exit(cli);
+                    return clientExit(cli);
                 }
                 const int res2 = readInt("Enter Y length: ", &sizeY);
                 if (res2 == -1) {
-                    return client_exit(cli);
+                    return clientExit(cli);
                 }
 
                 if ((!res1 || !res2) || (sizeX < 2 || sizeY < 2)) {
@@ -317,18 +317,34 @@ int main(void) {
                 return 1;
             }
             printf("\nClient sent map request.\n");
+
+            WorldRequest wRes;
+            const int mr = ipc_client_recv(&cli, (char*)&wRes, sizeof(WorldRequest));
+            if (mr <= 0) {
+                printf("\033[31mReceive failed (world).\033[0m\n");
+                ipc_client_close(&cli);
+                return 1;
+            }
+
             printf("World size set to %dx%d.\n", sizeX, sizeY);
+
+            for (int j = 0; j < sizeY; j++) {
+                for (int k = 0; k < sizeX; k++) {
+                    printf("%c ", wRes.world[k][j]);
+                }
+                printf("\n");
+            }
 
             if (mode == 2) {
                 while (1) {
                     printf("\nEnter starting position...\n");
                     const int res1 = readInt("Enter starting X: ", &x);
                     if (res1 == -1) {
-                        return client_exit(cli);
+                        return clientExit(cli);
                     }
                     const int res2 = readInt("Enter starting Y: ", &y);
                     if (res2 == -1) {
-                        return client_exit(cli);
+                        return clientExit(cli);
                     }
 
                     if (!res1 || !res2) {
@@ -385,19 +401,19 @@ int main(void) {
                 printf("\nEnter direction probabilities...\n");
                 const int res1 = readDouble("Enter prob up: ", &up, 0, 4);
                 if (res1 == -1) {
-                    return client_exit(cli);
+                    return clientExit(cli);
                 }
                 const int res2 = readDouble("Enter prob down: ", &down, up, 3);
                 if (res2 == -1) {
-                    return client_exit(cli);
+                    return clientExit(cli);
                 }
                 const int res3 = readDouble("Enter prob left: ", &left, (up + down), 2);
                 if (res3 == -1) {
-                    return client_exit(cli);
+                    return clientExit(cli);
                 }
                 const int res4 = readDouble("Enter prob right: ", &right, (up + down + left), 1);
                 if (res4 == -1) {
-                    return client_exit(cli);
+                    return clientExit(cli);
                 }
 
                 if (!res1 || !res2 || !res3 || !res4) {
@@ -417,7 +433,7 @@ int main(void) {
             while (1) {
                 const int res = readInt("Enter max steps K: ", &K);
                 if (res == -1) {
-                    return client_exit(cli);
+                    return clientExit(cli);
                 }
 
                 if (!res || K <= 0) {
@@ -436,7 +452,7 @@ int main(void) {
                 while (1) {
                     const int res = readInt("Enter replications count: ", &replications);
                     if (res == -1) {
-                        return client_exit(cli);
+                        return clientExit(cli);
                     }
 
                     if (!res || replications <= 0) {
@@ -450,6 +466,13 @@ int main(void) {
             break;
         }
 
+        h.type = MSG_SIMULATION;
+        if (ipc_client_send(&cli, (char*)&h, sizeof(MessageHeader)) <= 0) {
+            printf("\033[31mSend failed (header).\033[0m\n");
+            ipc_client_close(&cli);
+            return 1;
+        }
+
         SimRequest req;
         req.p_up = up;
         req.p_down = down;
@@ -457,13 +480,6 @@ int main(void) {
         req.p_right = right;
         req.maxSteps = K;
         req.replications = replications;
-
-        h.type = MSG_SIMULATION;
-        if (ipc_client_send(&cli, (char*)&h, sizeof(MessageHeader)) <= 0) {
-            printf("\033[31mSend failed (header).\033[0m\n");
-            ipc_client_close(&cli);
-            return 1;
-        }
 
         if (ipc_client_send(&cli, (char*)&req, sizeof(SimRequest)) <= 0) {
             printf("\033[31mSend failed (simulation).\033[0m\n");
