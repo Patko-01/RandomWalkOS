@@ -11,3 +11,5 @@ cmake-build-*/
 *.exe
 
 ignore.txt
+
+server/*.txt

@@ -5,7 +5,6 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(server
         server/server.c
-        server/server.h
         common/world.c
         common/world.h
         common/ipc.c
@@ -17,7 +16,6 @@ add_executable(server
 
 add_executable(client
         client/client.c
-        client/client.h
         common/world.c
         common/world.h
         common/ipc.c

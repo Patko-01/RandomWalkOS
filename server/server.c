@@ -24,7 +24,11 @@ int main(void) {
     }
     printf("Client connected.\n");
 
-    int worldExists = 0;
+    ModeRequest modeReq;
+    MapRequest mapReq;
+    StartPositionRequest startReq;
+    SimRequest req;
+    World world;
 
     while (1) {
         printf("--------------------------------------\n");
@@ -39,13 +43,6 @@ int main(void) {
         }
 
         printf("Server received message header.\n");
-
-        ModeRequest modeReq;
-        MapRequest mapReq;
-        StartPositionRequest startReq;
-        SimRequest req;
-
-        World world;
 
         switch (h.type) {
             case MSG_EXIT:
@@ -83,7 +80,6 @@ int main(void) {
                 if (mapReq.obstaclesMode == 1) {
                     placeObstacles(&world);
                 }
-                worldExists = 1;
 
                 WorldRequest wReq;
                 for (int y = 0; y < world.sizeY; ++y) {
@@ -113,10 +109,6 @@ int main(void) {
                 }
 
                 printf("Starting position request received.\n");
-
-                if (!worldExists) { // teoreticky toto nikdy nenastane v tejto situacii
-                    world = createWorld(2, 2);
-                }
 
                 if (isSafeToStart(&world, startReq.startX, startReq.startY)) {
                     printf("Starting position is OK.\n");
@@ -200,10 +192,6 @@ int main(void) {
                         return 1;
                     }
                 } else if (modeReq.mode == 2) {
-                    if (!worldExists) { // teoreticky toto nikdy nenastane v tejto situacii
-                        world = createWorld(2, 2);
-                    }
-
                     const Position start = { startReq.startX, startReq.startY };
                     WalkPathResult res = randomWalkWithPath(start, pr, req.maxSteps, &world);
 
@@ -215,8 +203,15 @@ int main(void) {
                     }
                 }
 
-                destroyWorld(&world);
                 printf("\nServer replied with simulation result.\n");
+            break;
+
+            case MSG_LOAD:
+                printf("Loading.");
+            break;
+
+            case MSG_SAVE:
+                printf("Saving.");
             break;
         }
     }

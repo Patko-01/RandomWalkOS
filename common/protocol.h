@@ -2,12 +2,16 @@
 #define PROTOCOL_H
 #include "randomWalk.h" // kvoli makram
 
+#define MAX_FILE_NAME 1024
+
 typedef enum {
     MSG_EXIT,
     MSG_MODE,
     MSG_MAP,
     MSG_START_POS,
-    MSG_SIMULATION
+    MSG_SIMULATION,
+    MSG_LOAD,
+    MSG_SAVE
 } MessageType;
 
 typedef struct {
@@ -36,6 +40,10 @@ typedef struct {
 typedef struct {
     char world[MAX_WORLD_X][MAX_WORLD_Y];
 } WorldRequest;
+
+typedef struct {
+    char filename[MAX_FILE_NAME];
+} FileRequest;
 
 typedef struct {
     double p_up;
