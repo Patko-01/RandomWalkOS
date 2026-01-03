@@ -28,14 +28,17 @@ int main(void) {
     MapRequest mapReq;
     StartPositionRequest startReq;
     SimRequest req;
+    FileRequest fReq;
     World world;
+
+    int loaded = 0;
 
     while (1) {
         printf("--------------------------------------\n");
         printf("Server waiting for message header...\n");
 
         MessageHeader h;
-        const int hr = ipc_server_recv(&srv, (char*)&h, sizeof(MessageHeader));
+        const int hr = ipc_server_recv(&srv, (char *) &h, sizeof(MessageHeader));
         if (hr <= 0) {
             printf("\033[31mReceive failed (header).\033[0m\n");
             ipc_server_stop(&srv);
@@ -54,7 +57,7 @@ int main(void) {
             case MSG_MODE:
                 printf("\nWaiting for client mode request...\n");
 
-                const int modeR = ipc_server_recv(&srv, (char*)&modeReq, sizeof(ModeRequest));
+                const int modeR = ipc_server_recv(&srv, (char *) &modeReq, sizeof(ModeRequest));
 
                 if (modeR <= 0) {
                     printf("\033[31mReceive failed (mode).\033[0m\n");
@@ -62,12 +65,12 @@ int main(void) {
                     return 1;
                 }
                 printf("Mode request received.\n");
-            break;
+                break;
 
             case MSG_MAP:
                 printf("\nWaiting for client map request...\n");
 
-                const int mapR = ipc_server_recv(&srv, (char*)&mapReq, sizeof(MapRequest));
+                const int mapR = ipc_server_recv(&srv, (char *) &mapReq, sizeof(MapRequest));
 
                 if (mapR <= 0) {
                     printf("\033[31mReceive failed (map).\033[0m\n");
@@ -88,18 +91,18 @@ int main(void) {
                     }
                 }
 
-                if (ipc_server_send(&srv, (char*)&wReq, sizeof(WorldRequest)) <= 0) {
+                if (ipc_server_send(&srv, (char *) &wReq, sizeof(WorldRequest)) <= 0) {
                     printf("\033[31mSend failed (world generation result).\033[0m\n");
                     destroyWorld(&world);
                     ipc_server_stop(&srv);
                     return 1;
                 }
-            break;
+                break;
 
             case MSG_START_POS:
                 printf("\nWaiting for client starting position request...\n");
 
-                const int sr = ipc_server_recv(&srv, (char*)&startReq, sizeof(StartPositionRequest));
+                const int sr = ipc_server_recv(&srv, (char *) &startReq, sizeof(StartPositionRequest));
 
                 if (sr <= 0) {
                     printf("\033[31mReceive failed (starting position).\033[0m\n");
@@ -116,7 +119,7 @@ int main(void) {
                     StartPositionResult pr;
                     pr.notOk = 0;
 
-                    if (ipc_server_send(&srv, (char*)&pr, sizeof(StartPositionResult)) <= 0) {
+                    if (ipc_server_send(&srv, (char *) &pr, sizeof(StartPositionResult)) <= 0) {
                         printf("\033[31mSend failed (position request result).\033[0m\n");
                         destroyWorld(&world);
                         ipc_server_stop(&srv);
@@ -128,41 +131,40 @@ int main(void) {
                     StartPositionResult pr;
                     pr.notOk = 1;
 
-                    if (ipc_server_send(&srv, (char*)&pr, sizeof(StartPositionResult)) <= 0) {
+                    if (ipc_server_send(&srv, (char *) &pr, sizeof(StartPositionResult)) <= 0) {
                         printf("\033[31mSend failed (position request result).\033[0m\n");
                         destroyWorld(&world);
                         ipc_server_stop(&srv);
                         return 1;
                     }
                 }
-            break;
+                break;
 
             case MSG_SIMULATION:
-                printf("\nWaiting for client simulation request...\n");
+                if (!loaded) {
+                    printf("\nWaiting for client simulation request...\n");
 
-                const int r = ipc_server_recv(&srv, (char*)&req, sizeof(SimRequest));
+                    const int r = ipc_server_recv(&srv, (char *) &req, sizeof(SimRequest));
 
-                if (r <= 0) {
-                    printf("\033[31mReceive failed (simulation).\033[0m\n");
-                    destroyWorld(&world);
-                    ipc_server_stop(&srv);
-                    return 1;
+                    if (r <= 0) {
+                        printf("\033[31mReceive failed (simulation).\033[0m\n");
+                        destroyWorld(&world);
+                        ipc_server_stop(&srv);
+                        return 1;
+                    }
+                    loaded = 1;
                 }
 
                 printf("Simulation request received.\n");
 
                 if (modeReq.mode == 1) {
                     printf("Mode = summary\n");
-                } else if (modeReq.mode == 2) {
-                    printf("Mode = interactive\n");
-                }
-                printf("World = %dx%d\n", mapReq.sizeX, mapReq.sizeY);
-
-                if (modeReq.mode == 1) {
                     printf("K = %d, replications = %d\n", req.maxSteps, req.replications);
                 } else if (modeReq.mode == 2) {
+                    printf("Mode = interactive\n");
                     printf("K = %d\n", req.maxSteps);
                 }
+                printf("World = %dx%d\n", mapReq.sizeX, mapReq.sizeY);
 
                 const Probabilities pr = {
                     req.p_up,
@@ -179,23 +181,23 @@ int main(void) {
                     for (int y = 0; y < mapReq.sizeY; y++) {
                         for (int x = 0; x < mapReq.sizeX; x++) {
                             if (isSafeToStart(&world, x, y)) {
-                                const Position start = { x, y };
+                                const Position start = {x, y};
                                 res[x][y] = randomWalkReplications(start, pr, req.maxSteps, req.replications, &world);
                             }
                         }
                     }
 
-                    if (ipc_server_send(&srv, (char*)&res, mapReq.sizeX * mapReq.sizeY * sizeof(WalkResult)) <= 0) {
+                    if (ipc_server_send(&srv, (char *) &res, mapReq.sizeX * mapReq.sizeY * sizeof(WalkResult)) <= 0) {
                         printf("\033[31mSend failed (simulation result).\033[0m\n");
                         destroyWorld(&world);
                         ipc_server_stop(&srv);
                         return 1;
                     }
                 } else if (modeReq.mode == 2) {
-                    const Position start = { startReq.startX, startReq.startY };
+                    const Position start = {startReq.startX, startReq.startY};
                     WalkPathResult res = randomWalkWithPath(start, pr, req.maxSteps, &world);
 
-                    if (ipc_server_send(&srv, (char*)&res, sizeof(WalkPathResult)) <= 0) {
+                    if (ipc_server_send(&srv, (char *) &res, sizeof(WalkPathResult)) <= 0) {
                         printf("\033[31mSend failed (simulation result).\033[0m\n");
                         destroyWorld(&world);
                         ipc_server_stop(&srv);
@@ -204,15 +206,154 @@ int main(void) {
                 }
 
                 printf("\nServer replied with simulation result.\n");
-            break;
+
+                FILE *fs = fopen(fReq.filename, "w");
+                if (!fs) {
+                    printf("\033[31mFailed to open file for saving.\033[0m\n");
+                    destroyWorld(&world);
+                    ipc_server_stop(&srv);
+                    return 1;
+                }
+
+                fprintf(fs, "sMode: %d\n", modeReq.mode);
+                fprintf(fs, "mMode: %d\n", mapReq.obstaclesMode);
+                fprintf(fs, "worldX: %d\n", mapReq.sizeX);
+                fprintf(fs, "worldY: %d\n", mapReq.sizeY);
+                for (int y = 0; y < world.sizeY; ++y) {
+                    for (int x = 0; x < world.sizeX; ++x) {
+                        fputc(WORLD_AT(&world, x, y), fs);
+                        if (x < world.sizeX - 1) fputc(' ', fs);
+                    }
+                    fputc('\n', fs);
+                }
+                if (modeReq.mode == 2) {
+                    fprintf(fs, "startX: %d\n", startReq.startX);
+                    fprintf(fs, "startY: %d\n", startReq.startY);
+                }
+                fprintf(fs, "prUp: %.6f\n", req.p_up);
+                fprintf(fs, "prDown: %.6f\n", req.p_down);
+                fprintf(fs, "prLeft: %.6f\n", req.p_left);
+                fprintf(fs, "prRight: %.6f\n", req.p_right);
+                fprintf(fs, "K: %d\n", req.maxSteps);
+
+                fclose(fs);
+                printf("Simulation saved to '%s'.\n", fReq.filename);
+                break;
 
             case MSG_LOAD:
-                printf("Loading.");
-            break;
+                printf("File load request received\n");
 
-            case MSG_SAVE:
-                printf("Saving.");
-            break;
+                FILE *fl = fopen(fReq.filename, "r");
+                if (!fl) {
+                    printf("\033[31mFailed to open file for loading.\033[0m\n");
+                    destroyWorld(&world);
+                    ipc_server_stop(&srv);
+                    return 1;
+                }
+
+                char line[1024];
+
+                if (!fgets(line, sizeof(line), fl) ||
+                    sscanf(line, "sMode: %d", &modeReq.mode) != 1) {
+                    printf("Invalid sMode\n");
+                    fclose(fl);
+                    break;
+                }
+
+                if (!fgets(line, sizeof(line), fl) ||
+                    sscanf(line, "mMode: %d", &mapReq.obstaclesMode) != 1) {
+                    printf("Invalid mMode\n");
+                    fclose(fl);
+                    break;
+                }
+
+                if (!fgets(line, sizeof(line), fl) ||
+                    sscanf(line, "worldX: %d", &mapReq.sizeX) != 1) {
+                    printf("Invalid worldX\n");
+                    fclose(fl);
+                    break;
+                }
+
+                if (!fgets(line, sizeof(line), fl) ||
+                    sscanf(line, "worldY: %d", &mapReq.sizeY) != 1) {
+                    printf("Invalid worldY\n");
+                    fclose(fl);
+                    break;
+                }
+
+                destroyWorld(&world);
+                world = createWorld(mapReq.sizeX, mapReq.sizeY);
+
+                for (int y = 0; y < world.sizeY; ++y) {
+                    if (!fgets(line, sizeof(line), fl)) {
+                        printf("Invalid world row\n");
+                        fclose(fl);
+                        break;
+                    }
+
+                    const char *tok = strtok(line, " \n");
+                    for (int x = 0; x < world.sizeX && tok; ++x) {
+                        WORLD_AT(&world, x, y) = tok[0];
+                        tok = strtok(NULL, " \n");
+                    }
+                }
+
+                if (modeReq.mode == 2) {
+                    if (!fgets(line, sizeof(line), fl) ||
+                        sscanf(line, "startX: %d", &startReq.startX) != 1) {
+                        printf("Invalid startX\n");
+                        fclose(fl);
+                        break;
+                    }
+
+                    if (!fgets(line, sizeof(line), fl) ||
+                        sscanf(line, "startY: %d", &startReq.startY) != 1) {
+                        printf("Invalid startY\n");
+                        fclose(fl);
+                        break;
+                    }
+                }
+
+                if (!fgets(line, sizeof(line), fl) ||
+                    sscanf(line, "prUp: %lf", &req.p_up) != 1 ||
+                    !fgets(line, sizeof(line), fl) ||
+                    sscanf(line, "prDown: %lf", &req.p_down) != 1 ||
+                    !fgets(line, sizeof(line), fl) ||
+                    sscanf(line, "prLeft: %lf", &req.p_left) != 1 ||
+                    !fgets(line, sizeof(line), fl) ||
+                    sscanf(line, "prRight: %lf", &req.p_right) != 1) {
+                    printf("Invalid probabilities\n");
+                    fclose(fl);
+                    break;
+                }
+
+                if (!fgets(line, sizeof(line), fl) ||
+                    sscanf(line, "K: %d", &req.maxSteps) != 1) {
+                    printf("Invalid K\n");
+                    fclose(fl);
+                    break;
+                }
+
+                fclose(fl);
+
+                printf("Simulation loaded successfully from '%s'.\n", fReq.filename);
+                loaded = 1;
+                break;
+
+            case MSG_FILE:
+                printf("\nWaiting for client file name request...\n");
+
+                const int frs = ipc_server_recv(&srv, (char *) &fReq, sizeof(FileRequest));
+
+                if (frs <= 0) {
+                    printf("\033[31mReceive failed (file name).\033[0m\n");
+                    destroyWorld(&world);
+                    ipc_server_stop(&srv);
+                    return 1;
+                }
+
+                printf("File name request received.\n");
+                break;
         }
     }
 }

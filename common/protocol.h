@@ -11,7 +11,7 @@ typedef enum {
     MSG_START_POS,
     MSG_SIMULATION,
     MSG_LOAD,
-    MSG_SAVE
+    MSG_FILE
 } MessageType;
 
 typedef struct {
