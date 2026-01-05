@@ -154,8 +154,10 @@ int main(void) {
                         ipc_server_stop(&srv);
                         return 1;
                     }
-                } else {
-                    ReplicationRequest repReq;
+                }
+
+                ReplicationRequest repReq;
+                if (modeReq.mode == 1) {
                     const int r = ipc_server_recv(&srv, (char *) &repReq, sizeof(ReplicationRequest));
 
                     if (r <= 0) {
@@ -164,15 +166,13 @@ int main(void) {
                         ipc_server_stop(&srv);
                         return 1;
                     }
-
-                    req.replications = repReq.replications;
                 }
 
                 printf("Simulation request received.\n");
 
                 if (modeReq.mode == 1) {
                     printf("Mode = summary\n");
-                    printf("K = %d, replications = %d\n", req.maxSteps, req.replications);
+                    printf("K = %d, replications = %d\n", req.maxSteps, repReq.replications);
                 } else if (modeReq.mode == 2) {
                     printf("Mode = interactive\n");
                     printf("K = %d\n", req.maxSteps);
@@ -194,7 +194,7 @@ int main(void) {
                         for (int x = 0; x < mapReq.sizeX; x++) {
                             if (isSafeToStart(&world, x, y)) {
                                 const Position start = {x, y};
-                                resRep[x][y] = randomWalkReplications(start, pr, req.maxSteps, req.replications, &world);
+                                resRep[x][y] = randomWalkReplications(start, pr, req.maxSteps, repReq.replications, &world);
                             }
                         }
                     }
@@ -227,11 +227,6 @@ int main(void) {
                     return 1;
                 }
 
-                for (int i = 0; i < mapReq.sizeX; i++) {
-                    fprintf(fs, "-");
-                }
-
-                fprintf(fs, "\nSimulation Result:\n");
                 fprintf(fs, "mMode: %d\n", mapReq.obstaclesMode);
                 fprintf(fs, "worldX: %d\n", mapReq.sizeX);
                 fprintf(fs, "worldY: %d\n", mapReq.sizeY);
@@ -247,10 +242,16 @@ int main(void) {
                 fprintf(fs, "prDown: %.6f\n", req.p_down);
                 fprintf(fs, "prLeft: %.6f\n", req.p_left);
                 fprintf(fs, "prRight: %.6f\n", req.p_right);
-                fprintf(fs, "K: %d\n", req.maxSteps);
+                fprintf(fs, "K: %d\n\n", req.maxSteps);
+
+                for (int i = 1; i < (2 * mapReq.sizeX); i++) {
+                    fprintf(fs, "-");
+                }
+
+                fprintf(fs, "\nSimulation Result:\n");
 
                 if (modeReq.mode == 1) {
-                    drawResultMap(fs, world.sizeX, world.sizeY, resRep, 1);
+                    drawResultMap(fs, world.sizeX, world.sizeY, resRep, repReq.printMode);
                 } else if (modeReq.mode == 2) {
                     drawPath(fs, resPath);
                 }

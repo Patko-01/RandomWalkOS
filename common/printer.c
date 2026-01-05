@@ -1,8 +1,6 @@
 #include "printer.h"
 
-#include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -72,6 +70,19 @@ void drawPath(FILE *out, const WalkPathResult result) {
     }
 }
 
+int numberOfDigits(int number) {
+    if (number == 0) {
+        return 1;
+    }
+
+    int digits = 0;
+    while (number != 0) {
+        number /= 10;
+        digits++;
+    }
+    return digits;
+}
+
 // VLA
 void drawResultMap(FILE *out, const int sizeX, const int sizeY, const WalkResult results[sizeX][sizeY], const int printMode) {
     double highestAvgStepCount = 0;
@@ -84,18 +95,8 @@ void drawResultMap(FILE *out, const int sizeX, const int sizeY, const WalkResult
         }
     }
 
-    int mostDigits = 1;
-    if (printMode == 2) {
-        if ((int) highestAvgStepCount > 0) {
-            mostDigits = (int) log10(abs((int) highestAvgStepCount)) + 1;
-        }
-
-        if (mostDigits < 2) {
-            mostDigits = 2;
-        }
-
-        mostDigits += 3; // lebo 2 desatinne miesta + bodka
-    }
+    int mostDigits = numberOfDigits((int)highestAvgStepCount);
+    mostDigits += 3; // lebo 2 desatinne miesta + bodka
 
     for (int y = 0; y < sizeY; ++y) {
         for (int x = 0; x < sizeX; ++x) {
@@ -109,11 +110,12 @@ void drawResultMap(FILE *out, const int sizeX, const int sizeY, const WalkResult
                 if (printMode == 1) {
                     fprintf(out, "%.2f ", results[x][y].probSuccess);
                 } else if (printMode == 2) {
-                    fprintf(out, "%.2f", results[x][y].avgStepCount);
-
                     if (results[x][y].avgStepCount > 0) {
-                        currCellWidth = (int) log10(abs((int) results[x][y].avgStepCount)) + 1;
+                        fprintf(out, "%.2f", results[x][y].avgStepCount);
+                        currCellWidth = numberOfDigits((int) results[x][y].avgStepCount);
                         currCellWidth += 3;
+                    } else {
+                        fprintf(out, "-1.00");
                     }
                 }
             }

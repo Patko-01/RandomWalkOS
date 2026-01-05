@@ -54,11 +54,11 @@ typedef struct {
     double p_right;
 
     int maxSteps;     // K
-    int replications;
 } SimRequest;
 
 typedef struct {
     int replications;
+    int printMode;
 } ReplicationRequest;
 
 typedef struct {

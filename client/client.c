@@ -349,7 +349,7 @@ int main(void) {
             exit(1);
         } else if (pid > 0) {
             printf("Server started in background.\n");
-            sleep(1); // cakam na spustenie servera
+            sleep(2); // cakam na spustenie servera
             if (ipc_client_connect(&cli, IPC_PORT) != 0) {
                 printf("\033[31mConnection failed.\033[0m\n");
                 return 1;
@@ -387,7 +387,7 @@ int main(void) {
             exit(1);
         } else if (pid > 0) {
             printf("Server started in background.\n");
-            sleep(1); // cakam na spustenie servera
+            sleep(2); // cakam na spustenie servera
         } else {
             perror("fork failed");
             return 1;
@@ -428,7 +428,7 @@ int main(void) {
         K = lr.sReq.maxSteps;
 
         printf("\n------------------------------\n");
-        printf("Client received loading result\n");
+        printf("Client received loading result.\n");
         printf("Direction probabilities set to {up: %lf, down: %lf, left: %lf, right: %lf}.\n", up, down, left, right);
         printf("World size set to %dx%d.\n", sizeX, sizeY);
 
@@ -581,16 +581,17 @@ int main(void) {
         req.p_left = left;
         req.p_right = right;
         req.maxSteps = K;
-        req.replications = replications;
 
         if (ipc_client_send(&cli, (char *) &req, sizeof(SimRequest)) <= 0) {
             printf("\033[31mSend failed (simulation).\033[0m\n");
             ipc_client_close(&cli);
             return 1;
         }
-    } else {
+    }
+    if (mode == 1) {
         ReplicationRequest req;
         req.replications = replications;
+        req.printMode = printMode;
 
         if (ipc_client_send(&cli, (char *) &req, sizeof(ReplicationRequest)) <= 0) {
             printf("\033[31mSend failed (replications).\033[0m\n");
@@ -623,6 +624,8 @@ int main(void) {
             ipc_client_close(&cli);
             return 1;
         }
+
+        printf("\nClient received simulation result.\n");
 
         drawPath(stdout, res);
     }
