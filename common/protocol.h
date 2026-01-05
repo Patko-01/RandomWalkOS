@@ -1,8 +1,10 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
-#include "randomWalk.h" // kvoli makram
 
 #define MAX_FILE_NAME 1024
+#define MAX_PATH 1024
+#define MAX_WORLD_X 50
+#define MAX_WORLD_Y 50
 
 typedef enum {
     MSG_EXIT,
@@ -54,5 +56,37 @@ typedef struct {
     int maxSteps;     // K
     int replications;
 } SimRequest;
+
+typedef struct {
+    int replications;
+} ReplicationRequest;
+
+typedef struct {
+    MapRequest mapReq;
+    WorldRequest wReq;
+    SimRequest sReq;
+} LoadedResponse;
+
+typedef struct {
+    double probSuccess;
+    double avgStepCount;
+} WalkResult;
+
+typedef struct {
+    int x;
+    int y;
+} Position;
+
+typedef struct {
+    int pathLen;
+    int worldX;
+    int worldY;
+
+    int success;
+    int stuck;
+
+    Position path[MAX_PATH];
+    char world[MAX_WORLD_X][MAX_WORLD_Y];
+} WalkPathResult;
 
 #endif

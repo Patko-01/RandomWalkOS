@@ -73,12 +73,12 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
                     return result;
                 }
                 direction = nextStep(pr, &seed);
-                ++numOfGenerated;
 
                 int found = 0;
                 for (int j = 0; j <= index; ++j) {
                     if (direction == usedDirections[j]) {
                         found = 1;
+                        ++numOfGenerated;
                         break;
                     }
                     if (index >= 4) {

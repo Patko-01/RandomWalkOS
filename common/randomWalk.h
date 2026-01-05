@@ -1,15 +1,7 @@
 #ifndef PROJECTS_RANDOM_WALK_H
 #define PROJECTS_RANDOM_WALK_H
 #include "world.h"
-
-#define MAX_PATH 1024
-#define MAX_WORLD_X 100
-#define MAX_WORLD_Y 100
-
-typedef struct {
-    int x;
-    int y;
-} Position;
+#include "protocol.h"
 
 typedef struct {
     double p_up;
@@ -17,23 +9,6 @@ typedef struct {
     double p_left;
     double p_right;
 } Probabilities;
-
-typedef struct {
-    double probSuccess;
-    double avgStepCount;
-} WalkResult;
-
-typedef struct {
-    int pathLen;
-    int worldX;
-    int worldY;
-
-    int success;
-    int stuck;
-
-    Position path[MAX_PATH];
-    char world[MAX_WORLD_X][MAX_WORLD_Y];
-} WalkPathResult;
 
 WalkResult randomWalkReplications(Position start, Probabilities pr, int K, int count, World *world);
 WalkPathResult randomWalkWithPath(Position start, Probabilities pr, int K, const World *world);

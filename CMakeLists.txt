@@ -12,6 +12,8 @@ add_executable(server
         common/randomWalk.c
         common/randomWalk.h
         common/protocol.h
+        common/printer.c
+        common/printer.h
 )
 
 add_executable(client
@@ -22,7 +24,10 @@ add_executable(client
         common/ipc.h
         common/randomWalk.h
         common/protocol.h
+        common/printer.c
+        common/printer.h
 )
 
 # Link math library
 target_link_libraries(client PRIVATE m)
+target_link_libraries(server PRIVATE m)
