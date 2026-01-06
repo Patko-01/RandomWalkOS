@@ -152,7 +152,7 @@ int readModeFromUser(ipcClient cli, int *mode) {
         return 1;
     }
 
-    printf("\nClient sent mode request.\n\n");
+    printf("\nClient sent mode request.\n");
     return 0;
 }
 
