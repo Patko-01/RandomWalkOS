@@ -319,7 +319,7 @@ int main(void) {
     while (1) {
         const int res = readInt(">", &programMode);
         if (res == -1 || programMode == 4) {
-            printf("Ending program.");
+            printf("Ending program.\n");
             return 0;
         }
 
