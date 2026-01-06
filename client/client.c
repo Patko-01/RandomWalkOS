@@ -64,7 +64,7 @@ int readDouble(const char *prompt, double *out, const double probSum, const int 
 }
 
 int clientExit(ipcClient cli) {
-    MessageHeader h;
+    MessageHeader h = {0};
     h.type = MSG_EXIT;
 
     if (ipcClientSend(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
@@ -103,7 +103,7 @@ int setFileName(ipcClient cli) {
             return 0;
         }
 
-        MessageHeader h;
+        MessageHeader h = {0};
         h.type = MSG_FILE;
         if (ipcClientSend(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
             printf("\033[31mSend failed (header).\033[0m\n");
@@ -136,7 +136,7 @@ int readModeFromUser(ipcClient cli, int *mode) {
         break;
     }
 
-    MessageHeader h;
+    MessageHeader h = {0};
     h.type = MSG_MODE;
     if (ipcClientSend(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
         printf("\033[31mSend failed (header).\033[0m\n");
@@ -144,7 +144,7 @@ int readModeFromUser(ipcClient cli, int *mode) {
         return 1;
     }
 
-    ModeRequest modeReq;
+    ModeRequest modeReq = {0};
     modeReq.mode = *mode;
     if (ipcClientSend(&cli, (char *) &modeReq, sizeof(ModeRequest)) <= 0) {
         printf("\033[31mSend failed (mode).\033[0m\n");
@@ -157,7 +157,7 @@ int readModeFromUser(ipcClient cli, int *mode) {
 }
 
 int readFromUser(ipcClient cli, int *mode, int *sizeX, int *sizeY, int *obstaclesMode, int *K, double *up, double *down, double *left, double *right) {
-    MessageHeader h;
+    MessageHeader h = {0};
 
         if (readModeFromUser(cli, mode) != 0) {
             return 1;
@@ -205,7 +205,7 @@ int readFromUser(ipcClient cli, int *mode, int *sizeX, int *sizeY, int *obstacle
             return 1;
         }
 
-        MapRequest mapReq;
+        MapRequest mapReq = {0};
         mapReq.obstaclesMode = *obstaclesMode;
         mapReq.sizeX = *sizeX;
         mapReq.sizeY = *sizeY;
@@ -217,7 +217,7 @@ int readFromUser(ipcClient cli, int *mode, int *sizeX, int *sizeY, int *obstacle
         }
         printf("\nClient sent map request.\n");
 
-        WorldRequest wRes;
+        WorldRequest wRes = {0};
         const int mr = ipcClientRecv(&cli, (char *) &wRes, sizeof(WorldRequest));
         if (mr <= 0) {
             printf("\033[31mReceive failed (world).\033[0m\n");
@@ -333,7 +333,7 @@ int main(void) {
 
     int x, y, K, replications, sizeX, sizeY, mode, printMode, obstaclesMode;
     double up, down, left, right;
-    MessageHeader h;
+    MessageHeader h = {0};
     pid_t pid;
 
     int load = 0;
@@ -410,7 +410,7 @@ int main(void) {
         }
         load = 1;
 
-        LoadedResponse lr;
+        LoadedResponse lr = {0};
         const int r = ipcClientRecv(&cli, (char *) &lr, sizeof(LoadedResponse));
         if (r <= 0) {
             printf("\033[31mReceive failed (loading result).\033[0m\n");
@@ -537,7 +537,7 @@ int main(void) {
                 return 1;
             }
 
-            StartPositionRequest startReq;
+            StartPositionRequest startReq = {0};
             startReq.startX = x;
             startReq.startY = y;
 
@@ -548,7 +548,7 @@ int main(void) {
             }
             printf("\nClient sent starting position request.\n");
 
-            StartPositionResult st;
+            StartPositionResult st = {0};
             const int r = ipcClientRecv(&cli, (char *) &st, sizeX * sizeY * sizeof(StartPositionResult));
             if (r <= 0) {
                 printf("\033[31mReceive failed (starting position result).\033[0m\n");
@@ -575,7 +575,7 @@ int main(void) {
     }
 
     if (!load) {
-        SimRequest req;
+        SimRequest req = {0};
         req.p_up = up;
         req.p_down = down;
         req.p_left = left;
@@ -589,7 +589,7 @@ int main(void) {
         }
     }
     if (mode == 1) {
-        ReplicationRequest req;
+        ReplicationRequest req = {0};
         req.replications = replications;
         req.printMode = printMode;
 
@@ -604,6 +604,7 @@ int main(void) {
 
     if (mode == 1) {
         WalkResult res[sizeX][sizeY];
+        memset(res, 0, sizeof res);
 
         const int r = ipcClientRecv(&cli, (char *) &res, sizeX * sizeY * sizeof(WalkResult));
         if (r <= 0) {
@@ -616,7 +617,7 @@ int main(void) {
 
         drawResultMap(stdout, sizeX, sizeY, res, printMode);
     } else if (mode == 2) {
-        WalkPathResult res;
+        WalkPathResult res = {0};
 
         const int r = ipcClientRecv(&cli, (char *) &res, sizeof(WalkPathResult));
         if (r <= 0) {

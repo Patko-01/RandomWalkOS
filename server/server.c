@@ -12,7 +12,7 @@
 int main(void) {
     srand((unsigned) time(NULL) ^ (unsigned) getpid()); //kod od AI
 
-    ipcServer srv;
+    ipcServer srv = {0};
     if (ipcServerStart(&srv, IPC_PORT) != 0) {
         printf("\033[31mServer start failed.\033[0m\n");
         return 1;
@@ -26,12 +26,12 @@ int main(void) {
     }
     printf("Client connected.\n");
 
-    ModeRequest modeReq;
-    MapRequest mapReq;
-    StartPositionRequest startReq;
-    SimRequest req;
-    FileRequest fReq;
-    World world;
+    ModeRequest modeReq = {0};
+    MapRequest mapReq = {0};
+    StartPositionRequest startReq = {0};
+    SimRequest req = {0};
+    FileRequest fReq = {0};
+    World world = {0};
 
     int load = 0;
 
@@ -39,7 +39,7 @@ int main(void) {
         printf("--------------------------------------\n");
         printf("Server waiting for message header...\n");
 
-        MessageHeader h;
+        MessageHeader h = {0};
         const int hr = ipcServerRecv(&srv, (char *) &h, sizeof(MessageHeader));
         if (hr <= 0) {
             printf("\033[31mReceive failed (header).\033[0m\n");
@@ -86,7 +86,7 @@ int main(void) {
                     placeObstacles(&world);
                 }
 
-                WorldRequest wReq;
+                WorldRequest wReq = {0};
                 for (int y = 0; y < world.sizeY; ++y) {
                     for (int x = 0; x < world.sizeX; ++x) {
                         wReq.world[x][y] = WORLD_AT(&world, x, y);
@@ -118,7 +118,7 @@ int main(void) {
                 if (isSafeToStart(&world, startReq.startX, startReq.startY)) {
                     printf("Starting position is OK.\n");
 
-                    StartPositionResult pr;
+                    StartPositionResult pr = {0};
                     pr.notOk = 0;
 
                     if (ipcServerSend(&srv, (char *) &pr, sizeof(StartPositionResult)) <= 0) {
@@ -130,7 +130,7 @@ int main(void) {
                 } else {
                     printf("Starting position is not OK.\n");
 
-                    StartPositionResult pr;
+                    StartPositionResult pr = {0};
                     pr.notOk = 1;
 
                     if (ipcServerSend(&srv, (char *) &pr, sizeof(StartPositionResult)) <= 0) {
@@ -156,7 +156,7 @@ int main(void) {
                     }
                 }
 
-                ReplicationRequest repReq;
+                ReplicationRequest repReq = {0};
                 if (modeReq.mode == 1) {
                     const int r = ipcServerRecv(&srv, (char *) &repReq, sizeof(ReplicationRequest));
 
@@ -187,7 +187,8 @@ int main(void) {
                 };
 
                 WalkResult resRep[mapReq.sizeX][mapReq.sizeY];
-                WalkPathResult resPath;
+                memset(resRep, 0, sizeof resRep);
+                WalkPathResult resPath = {0};
 
                 if (modeReq.mode == 1) {
                     for (int y = 0; y < mapReq.sizeY; y++) {
@@ -298,7 +299,7 @@ int main(void) {
                 destroyWorld(&world);
                 world = createWorld(mapReq.sizeX, mapReq.sizeY);
 
-                WorldRequest wReq;
+                WorldRequest wReq = {0};
                 for (int y = 0; y < world.sizeY; ++y) {
                     if (!fgets(line, sizeof(line), fl)) {
                         printf("Invalid world row\n");
@@ -342,7 +343,7 @@ int main(void) {
                 printf("Simulation loaded successfully from '%s'.\n", fReq.filename);
                 load = 1;
 
-                LoadedResponse lRes;
+                LoadedResponse lRes = {0};
                 lRes.mapReq = mapReq;
                 lRes.wReq = wReq;
                 lRes.sReq = req;
