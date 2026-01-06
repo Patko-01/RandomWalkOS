@@ -63,22 +63,22 @@ int readDouble(const char *prompt, double *out, const double probSum, const int 
     }
 }
 
-int clientExit(ipc_client cli) {
+int clientExit(ipcClient cli) {
     MessageHeader h;
     h.type = MSG_EXIT;
 
-    if (ipc_client_send(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
+    if (ipcClientSend(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
         printf("\033[31mSend failed (header).\033[0m\n");
-        ipc_client_close(&cli);
+        ipcClientClose(&cli);
         return 1;
     }
 
     printf("Client sent exit request.\n");
-    ipc_client_close(&cli);
+    ipcClientClose(&cli);
     return 0;
 }
 
-int setFileName(ipc_client cli) {
+int setFileName(ipcClient cli) {
     while (1) {
         FileRequest fReq = {0};
 
@@ -105,15 +105,15 @@ int setFileName(ipc_client cli) {
 
         MessageHeader h;
         h.type = MSG_FILE;
-        if (ipc_client_send(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
+        if (ipcClientSend(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
             printf("\033[31mSend failed (header).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
 
-        if (ipc_client_send(&cli, (char *) &fReq, sizeof(FileRequest)) <= 0) {
+        if (ipcClientSend(&cli, (char *) &fReq, sizeof(FileRequest)) <= 0) {
             printf("\033[31mSend failed (file).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
         break;
@@ -122,7 +122,7 @@ int setFileName(ipc_client cli) {
     return 0;
 }
 
-int readModeFromUser(ipc_client cli, int *mode) {
+int readModeFromUser(ipcClient cli, int *mode) {
     while (1) {
         const int res = readInt("Choose simulation mode (1 -> summary, 2 -> interactive) ", mode);
         if (res == -1) {
@@ -138,17 +138,17 @@ int readModeFromUser(ipc_client cli, int *mode) {
 
     MessageHeader h;
     h.type = MSG_MODE;
-    if (ipc_client_send(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
+    if (ipcClientSend(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
         printf("\033[31mSend failed (header).\033[0m\n");
-        ipc_client_close(&cli);
+        ipcClientClose(&cli);
         return 1;
     }
 
     ModeRequest modeReq;
     modeReq.mode = *mode;
-    if (ipc_client_send(&cli, (char *) &modeReq, sizeof(ModeRequest)) <= 0) {
+    if (ipcClientSend(&cli, (char *) &modeReq, sizeof(ModeRequest)) <= 0) {
         printf("\033[31mSend failed (mode).\033[0m\n");
-        ipc_client_close(&cli);
+        ipcClientClose(&cli);
         return 1;
     }
 
@@ -156,7 +156,7 @@ int readModeFromUser(ipc_client cli, int *mode) {
     return 0;
 }
 
-int readFromUser(ipc_client cli, int *mode, int *sizeX, int *sizeY, int *obstaclesMode, int *K, double *up, double *down, double *left, double *right) {
+int readFromUser(ipcClient cli, int *mode, int *sizeX, int *sizeY, int *obstaclesMode, int *K, double *up, double *down, double *left, double *right) {
     MessageHeader h;
 
         if (readModeFromUser(cli, mode) != 0) {
@@ -199,9 +199,9 @@ int readFromUser(ipc_client cli, int *mode, int *sizeX, int *sizeY, int *obstacl
         }
 
         h.type = MSG_MAP;
-        if (ipc_client_send(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
+        if (ipcClientSend(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
             printf("\033[31mSend failed (header).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
 
@@ -210,18 +210,18 @@ int readFromUser(ipc_client cli, int *mode, int *sizeX, int *sizeY, int *obstacl
         mapReq.sizeX = *sizeX;
         mapReq.sizeY = *sizeY;
 
-        if (ipc_client_send(&cli, (char *) &mapReq, sizeof(MapRequest)) <= 0) {
+        if (ipcClientSend(&cli, (char *) &mapReq, sizeof(MapRequest)) <= 0) {
             printf("\033[31mSend failed (map).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
         printf("\nClient sent map request.\n");
 
         WorldRequest wRes;
-        const int mr = ipc_client_recv(&cli, (char *) &wRes, sizeof(WorldRequest));
+        const int mr = ipcClientRecv(&cli, (char *) &wRes, sizeof(WorldRequest));
         if (mr <= 0) {
             printf("\033[31mReceive failed (world).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
 
@@ -288,7 +288,7 @@ int readFromUser(ipc_client cli, int *mode, int *sizeX, int *sizeY, int *obstacl
 }
 
 int main(void) {
-    ipc_client cli;
+    ipcClient cli;
 
     printf(
         "██████╗░░█████╗░███╗░░██╗██████╗░░█████╗░███╗░░░███╗░░░██╗░░░░░░░██╗░█████╗░██╗░░░░░██╗░░██╗░░░█████╗░░██████╗\n"
@@ -350,7 +350,7 @@ int main(void) {
         } else if (pid > 0) {
             printf("Server started in background.\n");
             sleep(2); // cakam na spustenie servera
-            if (ipc_client_connect(&cli, IPC_PORT) != 0) {
+            if (ipcClientConnect(&cli, IPC_PORT) != 0) {
                 printf("\033[31mConnection failed.\033[0m\n");
                 return 1;
             }
@@ -361,7 +361,7 @@ int main(void) {
             return 1;
         }
     } else if (programMode == 2) {
-        if (ipc_client_connect(&cli, IPC_PORT) != 0) {
+        if (ipcClientConnect(&cli, IPC_PORT) != 0) {
             printf("\033[31mConnection failed.\033[0m\n");
             return 1;
         }
@@ -392,7 +392,7 @@ int main(void) {
             perror("fork failed");
             return 1;
         }
-        if (ipc_client_connect(&cli, IPC_PORT) != 0) {
+        if (ipcClientConnect(&cli, IPC_PORT) != 0) {
             printf("\033[31mConnection failed.\033[0m\n");
             return 1;
         }
@@ -403,18 +403,18 @@ int main(void) {
         }
 
         h.type = MSG_LOAD;
-        if (ipc_client_send(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
+        if (ipcClientSend(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
             printf("\033[31mSend failed (header).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
         load = 1;
 
         LoadedResponse lr;
-        const int r = ipc_client_recv(&cli, (char *) &lr, sizeof(LoadedResponse));
+        const int r = ipcClientRecv(&cli, (char *) &lr, sizeof(LoadedResponse));
         if (r <= 0) {
             printf("\033[31mReceive failed (loading result).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
 
@@ -531,9 +531,9 @@ int main(void) {
             }
 
             h.type = MSG_START_POS;
-            if (ipc_client_send(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
+            if (ipcClientSend(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
                 printf("\033[31mSend failed (header).\033[0m\n");
-                ipc_client_close(&cli);
+                ipcClientClose(&cli);
                 return 1;
             }
 
@@ -541,18 +541,18 @@ int main(void) {
             startReq.startX = x;
             startReq.startY = y;
 
-            if (ipc_client_send(&cli, (char *) &startReq, sizeof(StartPositionRequest)) <= 0) {
+            if (ipcClientSend(&cli, (char *) &startReq, sizeof(StartPositionRequest)) <= 0) {
                 printf("\033[31mSend failed (starting position).\033[0m\n");
-                ipc_client_close(&cli);
+                ipcClientClose(&cli);
                 return 1;
             }
             printf("\nClient sent starting position request.\n");
 
             StartPositionResult st;
-            const int r = ipc_client_recv(&cli, (char *) &st, sizeX * sizeY * sizeof(StartPositionResult));
+            const int r = ipcClientRecv(&cli, (char *) &st, sizeX * sizeY * sizeof(StartPositionResult));
             if (r <= 0) {
                 printf("\033[31mReceive failed (starting position result).\033[0m\n");
-                ipc_client_close(&cli);
+                ipcClientClose(&cli);
                 return 1;
             }
 
@@ -568,9 +568,9 @@ int main(void) {
     }
 
     h.type = MSG_SIMULATION;
-    if (ipc_client_send(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
+    if (ipcClientSend(&cli, (char *) &h, sizeof(MessageHeader)) <= 0) {
         printf("\033[31mSend failed (header).\033[0m\n");
-        ipc_client_close(&cli);
+        ipcClientClose(&cli);
         return 1;
     }
 
@@ -582,9 +582,9 @@ int main(void) {
         req.p_right = right;
         req.maxSteps = K;
 
-        if (ipc_client_send(&cli, (char *) &req, sizeof(SimRequest)) <= 0) {
+        if (ipcClientSend(&cli, (char *) &req, sizeof(SimRequest)) <= 0) {
             printf("\033[31mSend failed (simulation).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
     }
@@ -593,9 +593,9 @@ int main(void) {
         req.replications = replications;
         req.printMode = printMode;
 
-        if (ipc_client_send(&cli, (char *) &req, sizeof(ReplicationRequest)) <= 0) {
+        if (ipcClientSend(&cli, (char *) &req, sizeof(ReplicationRequest)) <= 0) {
             printf("\033[31mSend failed (replications).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
     }
@@ -605,10 +605,10 @@ int main(void) {
     if (mode == 1) {
         WalkResult res[sizeX][sizeY];
 
-        const int r = ipc_client_recv(&cli, (char *) &res, sizeX * sizeY * sizeof(WalkResult));
+        const int r = ipcClientRecv(&cli, (char *) &res, sizeX * sizeY * sizeof(WalkResult));
         if (r <= 0) {
             printf("\033[31mReceive failed (simulation result).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
 
@@ -618,10 +618,10 @@ int main(void) {
     } else if (mode == 2) {
         WalkPathResult res;
 
-        const int r = ipc_client_recv(&cli, (char *) &res, sizeof(WalkPathResult));
+        const int r = ipcClientRecv(&cli, (char *) &res, sizeof(WalkPathResult));
         if (r <= 0) {
             printf("\033[31mReceive failed (simulation result).\033[0m\n");
-            ipc_client_close(&cli);
+            ipcClientClose(&cli);
             return 1;
         }
 

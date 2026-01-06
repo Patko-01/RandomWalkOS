@@ -12,16 +12,16 @@
 int main(void) {
     srand((unsigned) time(NULL) ^ (unsigned) getpid()); //kod od AI
 
-    ipc_server srv;
-    if (ipc_server_start(&srv, IPC_PORT) != 0) {
+    ipcServer srv;
+    if (ipcServerStart(&srv, IPC_PORT) != 0) {
         printf("\033[31mServer start failed.\033[0m\n");
         return 1;
     }
     printf("Server listening on port %s...\n", IPC_PORT);
 
-    if (ipc_server_accept(&srv) != 0) {
+    if (ipcServerAccept(&srv) != 0) {
         printf("\033[31mAccept failed.\033[0m\n");
-        ipc_server_stop(&srv);
+        ipcServerStop(&srv);
         return 1;
     }
     printf("Client connected.\n");
@@ -40,10 +40,10 @@ int main(void) {
         printf("Server waiting for message header...\n");
 
         MessageHeader h;
-        const int hr = ipc_server_recv(&srv, (char *) &h, sizeof(MessageHeader));
+        const int hr = ipcServerRecv(&srv, (char *) &h, sizeof(MessageHeader));
         if (hr <= 0) {
             printf("\033[31mReceive failed (header).\033[0m\n");
-            ipc_server_stop(&srv);
+            ipcServerStop(&srv);
             return 1;
         }
 
@@ -53,17 +53,17 @@ int main(void) {
             case MSG_EXIT: {
                 printf("Client requested exit.\n");
                 destroyWorld(&world);
-                ipc_server_stop(&srv);
+                ipcServerStop(&srv);
                 return 0;
             }
             case MSG_MODE: {
                 printf("\nWaiting for client mode request...\n");
 
-                const int modeR = ipc_server_recv(&srv, (char *) &modeReq, sizeof(ModeRequest));
+                const int modeR = ipcServerRecv(&srv, (char *) &modeReq, sizeof(ModeRequest));
 
                 if (modeR <= 0) {
                     printf("\033[31mReceive failed (mode).\033[0m\n");
-                    ipc_server_stop(&srv);
+                    ipcServerStop(&srv);
                     return 1;
                 }
                 printf("Mode request received.\n");
@@ -72,11 +72,11 @@ int main(void) {
             case MSG_MAP: {
                 printf("\nWaiting for client map request...\n");
 
-                const int mapR = ipc_server_recv(&srv, (char *) &mapReq, sizeof(MapRequest));
+                const int mapR = ipcServerRecv(&srv, (char *) &mapReq, sizeof(MapRequest));
 
                 if (mapR <= 0) {
                     printf("\033[31mReceive failed (map).\033[0m\n");
-                    ipc_server_stop(&srv);
+                    ipcServerStop(&srv);
                     return 1;
                 }
                 printf("Map request received.\n");
@@ -93,10 +93,10 @@ int main(void) {
                     }
                 }
 
-                if (ipc_server_send(&srv, (char *) &wReq, sizeof(WorldRequest)) <= 0) {
+                if (ipcServerSend(&srv, (char *) &wReq, sizeof(WorldRequest)) <= 0) {
                     printf("\033[31mSend failed (world generation result).\033[0m\n");
                     destroyWorld(&world);
-                    ipc_server_stop(&srv);
+                    ipcServerStop(&srv);
                     return 1;
                 }
                 break;
@@ -104,12 +104,12 @@ int main(void) {
             case MSG_START_POS: {
                 printf("\nWaiting for client starting position request...\n");
 
-                const int sr = ipc_server_recv(&srv, (char *) &startReq, sizeof(StartPositionRequest));
+                const int sr = ipcServerRecv(&srv, (char *) &startReq, sizeof(StartPositionRequest));
 
                 if (sr <= 0) {
                     printf("\033[31mReceive failed (starting position).\033[0m\n");
                     destroyWorld(&world);
-                    ipc_server_stop(&srv);
+                    ipcServerStop(&srv);
                     return 1;
                 }
 
@@ -121,10 +121,10 @@ int main(void) {
                     StartPositionResult pr;
                     pr.notOk = 0;
 
-                    if (ipc_server_send(&srv, (char *) &pr, sizeof(StartPositionResult)) <= 0) {
+                    if (ipcServerSend(&srv, (char *) &pr, sizeof(StartPositionResult)) <= 0) {
                         printf("\033[31mSend failed (position request result).\033[0m\n");
                         destroyWorld(&world);
-                        ipc_server_stop(&srv);
+                        ipcServerStop(&srv);
                         return 1;
                     }
                 } else {
@@ -133,10 +133,10 @@ int main(void) {
                     StartPositionResult pr;
                     pr.notOk = 1;
 
-                    if (ipc_server_send(&srv, (char *) &pr, sizeof(StartPositionResult)) <= 0) {
+                    if (ipcServerSend(&srv, (char *) &pr, sizeof(StartPositionResult)) <= 0) {
                         printf("\033[31mSend failed (position request result).\033[0m\n");
                         destroyWorld(&world);
-                        ipc_server_stop(&srv);
+                        ipcServerStop(&srv);
                         return 1;
                     }
                 }
@@ -146,24 +146,24 @@ int main(void) {
                 if (!load) {
                     printf("\nWaiting for client simulation request...\n");
 
-                    const int r = ipc_server_recv(&srv, (char *) &req, sizeof(SimRequest));
+                    const int r = ipcServerRecv(&srv, (char *) &req, sizeof(SimRequest));
 
                     if (r <= 0) {
                         printf("\033[31mReceive failed (simulation).\033[0m\n");
                         destroyWorld(&world);
-                        ipc_server_stop(&srv);
+                        ipcServerStop(&srv);
                         return 1;
                     }
                 }
 
                 ReplicationRequest repReq;
                 if (modeReq.mode == 1) {
-                    const int r = ipc_server_recv(&srv, (char *) &repReq, sizeof(ReplicationRequest));
+                    const int r = ipcServerRecv(&srv, (char *) &repReq, sizeof(ReplicationRequest));
 
                     if (r <= 0) {
                         printf("\033[31mReceive failed (replication count).\033[0m\n");
                         destroyWorld(&world);
-                        ipc_server_stop(&srv);
+                        ipcServerStop(&srv);
                         return 1;
                     }
                 }
@@ -199,20 +199,20 @@ int main(void) {
                         }
                     }
 
-                    if (ipc_server_send(&srv, (char *) &resRep, mapReq.sizeX * mapReq.sizeY * sizeof(WalkResult)) <= 0) {
+                    if (ipcServerSend(&srv, (char *) &resRep, mapReq.sizeX * mapReq.sizeY * sizeof(WalkResult)) <= 0) {
                         printf("\033[31mSend failed (simulation result).\033[0m\n");
                         destroyWorld(&world);
-                        ipc_server_stop(&srv);
+                        ipcServerStop(&srv);
                         return 1;
                     }
                 } else if (modeReq.mode == 2) {
                     const Position start = {startReq.startX, startReq.startY};
                     resPath = randomWalkWithPath(start, pr, req.maxSteps, &world);
 
-                    if (ipc_server_send(&srv, (char *) &resPath, sizeof(WalkPathResult)) <= 0) {
+                    if (ipcServerSend(&srv, (char *) &resPath, sizeof(WalkPathResult)) <= 0) {
                         printf("\033[31mSend failed (simulation result).\033[0m\n");
                         destroyWorld(&world);
-                        ipc_server_stop(&srv);
+                        ipcServerStop(&srv);
                         return 1;
                     }
                 }
@@ -223,7 +223,7 @@ int main(void) {
                 if (!fs) {
                     printf("\033[31mFailed to open file for saving.\033[0m\n");
                     destroyWorld(&world);
-                    ipc_server_stop(&srv);
+                    ipcServerStop(&srv);
                     return 1;
                 }
 
@@ -267,7 +267,7 @@ int main(void) {
                 if (!fl) {
                     printf("\033[31mFailed to open file for loading.\033[0m\n");
                     destroyWorld(&world);
-                    ipc_server_stop(&srv);
+                    ipcServerStop(&srv);
                     return 1;
                 }
 
@@ -347,10 +347,10 @@ int main(void) {
                 lRes.wReq = wReq;
                 lRes.sReq = req;
 
-                if (ipc_server_send(&srv, (char *) &lRes, sizeof(LoadedResponse)) <= 0) {
+                if (ipcServerSend(&srv, (char *) &lRes, sizeof(LoadedResponse)) <= 0) {
                     printf("\033[31mSend failed (loading result).\033[0m\n");
                     destroyWorld(&world);
-                    ipc_server_stop(&srv);
+                    ipcServerStop(&srv);
                     return 1;
                 }
 
@@ -360,12 +360,12 @@ int main(void) {
             case MSG_FILE: {
                 printf("\nWaiting for client file name request...\n");
 
-                const int frs = ipc_server_recv(&srv, (char *) &fReq, sizeof(FileRequest));
+                const int frs = ipcServerRecv(&srv, (char *) &fReq, sizeof(FileRequest));
 
                 if (frs <= 0) {
                     printf("\033[31mReceive failed (file name).\033[0m\n");
                     destroyWorld(&world);
-                    ipc_server_stop(&srv);
+                    ipcServerStop(&srv);
                     return 1;
                 }
 

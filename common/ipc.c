@@ -7,12 +7,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-int ipc_server_start(ipc_server* srv, const char* port) {
+int ipcServerStart(ipcServer* srv, const char* port) {
     if (!srv || !port) {
         return -1;
     }
-    srv->listen_sock = -1;
-    srv->conn_sock = -1;
+    srv->listenSock = -1;
+    srv->connSock = -1;
 
     const int listenSock = socket(AF_INET, SOCK_STREAM, 0);
     if (listenSock < 0) {
@@ -44,60 +44,60 @@ int ipc_server_start(ipc_server* srv, const char* port) {
         return -1;
     }
 
-    srv->listen_sock = listenSock;
+    srv->listenSock = listenSock;
     return 0;
 }
 
-int ipc_server_accept(ipc_server* srv) {
-    if (!srv || srv->listen_sock < 0) {
+int ipcServerAccept(ipcServer* srv) {
+    if (!srv || srv->listenSock < 0) {
         return -1;
     }
-    const int clientSock = accept(srv->listen_sock, NULL, NULL);
+    const int clientSock = accept(srv->listenSock, NULL, NULL);
     if (clientSock < 0) {
         printf("\033[31mServer accept failed.\033[0m\n");
         return -1;
     }
-    srv->conn_sock = clientSock;
+    srv->connSock = clientSock;
     return 0;
 }
 
-int ipc_server_recv(ipc_server* srv, char* buf, size_t buf_size) {
-    if (!srv || srv->conn_sock < 0 || !buf) {
+int ipcServerRecv(ipcServer* srv, char* buf, const size_t bufSize) {
+    if (!srv || srv->connSock < 0 || !buf) {
         return -1;
     }
-    const ssize_t r = recv(srv->conn_sock, buf, buf_size, 0);
+    const ssize_t r = recv(srv->connSock, buf, bufSize, 0);
     if (r < 0) {
         return -1;
     }
     return (int)r;
 }
 
-int ipc_server_send(ipc_server* srv, const char* buf, size_t len) {
-    if (!srv || srv->conn_sock < 0 || !buf) {
+int ipcServerSend(ipcServer* srv, const char* buf, const size_t len) {
+    if (!srv || srv->connSock < 0 || !buf) {
         return -1;
     }
-    const ssize_t s = send(srv->conn_sock, buf, len, 0);
+    const ssize_t s = send(srv->connSock, buf, len, 0);
     if (s < 0) {
         return -1;
     }
     return (int)s;
 }
 
-void ipc_server_stop(ipc_server* srv) {
+void ipcServerStop(ipcServer* srv) {
     if (!srv) {
         return;
     }
-    if (srv->conn_sock >= 0) {
-        close(srv->conn_sock);
-        srv->conn_sock = -1;
+    if (srv->connSock >= 0) {
+        close(srv->connSock);
+        srv->connSock = -1;
     }
-    if (srv->listen_sock >= 0) {
-        close(srv->listen_sock);
-        srv->listen_sock = -1;
+    if (srv->listenSock >= 0) {
+        close(srv->listenSock);
+        srv->listenSock = -1;
     }
 }
 
-int ipc_client_connect(ipc_client* cli, const char* port) {
+int ipcClientConnect(ipcClient* cli, const char* port) {
     if (!cli || !port) {
         return -1;
     }
@@ -137,18 +137,18 @@ int ipc_client_connect(ipc_client* cli, const char* port) {
     return 0;
 }
 
-int ipc_client_recv(ipc_client* cli, char* buf, const size_t buf_size) {
+int ipcClientRecv(ipcClient* cli, char* buf, const size_t bufSize) {
     if (!cli || cli->sock < 0 || !buf) {
         return -1;
     }
-    const ssize_t r = recv(cli->sock, buf, buf_size, 0);
+    const ssize_t r = recv(cli->sock, buf, bufSize, 0);
     if (r < 0) {
         return -1;
     }
     return (int)r;
 }
 
-int ipc_client_send(ipc_client* cli, const char* buf, const size_t len) {
+int ipcClientSend(ipcClient* cli, const char* buf, const size_t len) {
     if (!cli || cli->sock < 0 || !buf) {
         return -1;
     }
@@ -159,7 +159,7 @@ int ipc_client_send(ipc_client* cli, const char* buf, const size_t len) {
     return (int)s;
 }
 
-void ipc_client_close(ipc_client* cli) {
+void ipcClientClose(ipcClient* cli) {
     if (!cli) {
         return;
     }

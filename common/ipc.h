@@ -11,31 +11,29 @@
 #define IPC_PORT "13697"
 #define NUMBER_OF_CLIENTS 1
 
-// Socket types for server and client on POSIX/Linux
-typedef struct ipc_server {
-    int listen_sock;
-    int conn_sock;
-} ipc_server;
+typedef struct {
+    int listenSock;
+    int connSock;
+} ipcServer;
 
-typedef struct ipc_client {
+typedef struct {
     int sock;
-} ipc_client;
+} ipcClient;
 
-// Initialization / shutdown (no-ops on Linux, kept for API compatibility)
-int ipc_init();
-void ipc_shutdown();
+int ipcInit();
+void ipcShutdown();
 
-// Server side
-int ipc_server_start(ipc_server* srv, const char* port);
-int ipc_server_accept(ipc_server* srv);
-int ipc_server_recv(ipc_server* srv, char* buf, size_t buf_size);
-int ipc_server_send(ipc_server* srv, const char* buf, size_t len);
-void ipc_server_stop(ipc_server* srv);
+// Server
+int ipcServerStart(ipcServer* srv, const char* port);
+int ipcServerAccept(ipcServer* srv);
+int ipcServerRecv(ipcServer* srv, char* buf, size_t bufSize);
+int ipcServerSend(ipcServer* srv, const char* buf, size_t len);
+void ipcServerStop(ipcServer* srv);
 
-// Client side
-int ipc_client_connect(ipc_client* cli, const char* port);
-int ipc_client_recv(ipc_client* cli, char* buf, size_t buf_size);
-int ipc_client_send(ipc_client* cli, const char* buf, size_t len);
-void ipc_client_close(ipc_client* cli);
+// Client
+int ipcClientConnect(ipcClient* cli, const char* port);
+int ipcClientRecv(ipcClient* cli, char* buf, size_t bufSize);
+int ipcClientSend(ipcClient* cli, const char* buf, size_t len);
+void ipcClientClose(ipcClient* cli);
 
 #endif
