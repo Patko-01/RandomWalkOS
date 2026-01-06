@@ -274,7 +274,7 @@ int readFromUser(ipcClient cli, int *mode, int *sizeX, int *sizeY, int *obstacle
                 return 1;
             }
 
-            if (!res || K <= 0) {
+            if (!res || *K <= 0) {
                 printf("\033[31mK must be > 0.\033[0m\n");
                 continue;
             }
@@ -323,7 +323,7 @@ int main(void) {
             return 0;
         }
 
-        if (!res || (programMode != 1 && programMode != 2 && programMode != 3 && programMode != 4)) {
+        if (!res || (programMode != 1 && programMode != 2 && programMode != 3)) {
             printf("\033[31mInvalid menu option.\033[0m\n");
             continue;
         }
@@ -342,8 +342,8 @@ int main(void) {
     if (programMode == 1) {
         pid = fork();
         if (pid == 0) {
-            freopen("/dev/null", "w", stdout);
-            freopen("/dev/null", "w", stderr);
+            (void)freopen("/dev/null", "w", stdout);
+            (void)freopen("/dev/null", "w", stderr);
             execl("./server", "./server", IPC_PORT, NULL);
             perror("Failed to launch server");
             exit(1);
@@ -380,8 +380,8 @@ int main(void) {
     if (programMode == 3) {
         pid = fork();
         if (pid == 0) {
-            freopen("/dev/null", "w", stdout);
-            freopen("/dev/null", "w", stderr);
+            (void)freopen("/dev/null", "w", stdout);
+            (void)freopen("/dev/null", "w", stderr);
             execl("./server", "./server", IPC_PORT, NULL);
             perror("Failed to launch server");
             exit(1);
@@ -427,7 +427,7 @@ int main(void) {
         right = lr.sReq.p_right;
         K = lr.sReq.maxSteps;
 
-        printf("\n------------------------------\n");
+        printf("\n-------------------------------\n");
         printf("Client received loading result.\n");
         printf("Direction probabilities set to {up: %lf, down: %lf, left: %lf, right: %lf}.\n", up, down, left, right);
         printf("World size set to %dx%d.\n", sizeX, sizeY);

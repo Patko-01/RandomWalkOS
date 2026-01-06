@@ -82,7 +82,7 @@ WalkPathResult randomWalk(const Position start, const Probabilities pr, const in
                         break;
                     }
                     if (index >= 4) {
-                        found = 0; // tu by sa teoreticky nikdy nemal dostat, mapa by mala vzdy obsahovat cestu k (0,0)
+                        found = 0;
                     }
                 }
 
